@@ -29,7 +29,7 @@ class MultipassScraperAdapter(JobIngestPort):
             genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
         
         self.client = instructor.from_gemini(
-            client=genai.GenerativeModel(model_name="models/gemini-flash-latest"),
+            model="gemini-2.5-flash",
             mode=instructor.Mode.GEMINI_JSON,
         )
 
