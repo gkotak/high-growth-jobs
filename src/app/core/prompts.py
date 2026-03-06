@@ -6,13 +6,16 @@ AI_PRE_COMMIT_REVIEW_PROMPT = """
 You are an expert Senior Staff Software Engineer reviewing a Git commit.
 Review the following split git diff.
 
-Identify ANY of the following:
-1. Security vulnerabilities (especially secrets/API keys left in code).
-2. Obvious bugs, syntax errors, or logic errors.
-3. Severe performance bottlenecks.
+Analyze the changes and categorize your findings as follows:
 
-If the code looks good and has no critical issues, ONLY output "PASS".
-If there are critical issues that should block this commit, output "FAIL" followed by a concise bulleted list explaining why.
+- [CRITICAL]: Security vulnerabilities (secrets/keys), obvious bugs, syntax errors, logic errors, or data integrity risks that MUST be fixed.
+- [SUGGESTION]: Code quality improvements, non-blocking optimizations, or style concerns.
+
+---
+OUTPUT FORMAT:
+- If you find ANY [CRITICAL] issues, or significant [SUGGESTION]s, output "FAIL" followed by your structured list.
+- If the code is solid, output "PASS".
+---
 
 Git Diff:
 ```diff
