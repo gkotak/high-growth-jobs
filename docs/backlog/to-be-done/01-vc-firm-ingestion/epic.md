@@ -11,8 +11,7 @@ The foundation of HighGrowthJobs is tracking the most successful venture capital
 ## Functional Requirements
 
 ### 1. The Global "Top 200" Ingestion
-### 1. The Global "Top 200" Ingestion
-- **Static JSON Source:** A curated JSON file (`scripts/data/top_200_vcs.json`) containing the highest-tier VC firms globally (based on AUM, exits, and prestige).
+- **Static JSON Source:** A curated JSON file (`scripts/data/initial_seed_top_vcs.json`) containing the highest-tier VC firms globally (based on AUM, exits, and prestige).
 - **Automation**: A Python script reads the JSON file and instantly populates the PostgreSQL database. This ensures 100% data fidelity (no scraping errors, correct URLs) for the downstream Epic 2 tasks.
 
 ### 2. Manual Custom Additions (V2/Later)

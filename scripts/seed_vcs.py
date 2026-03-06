@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 def seed_vcs_from_json():
     """
-    Reads the curated Top 200 VC list from JSON and populates the database.
+    Reads the curated Top VC list from JSON and populates the database.
     This avoids brittle scraping and provides perfect URLs for Epic 2.
     """
-    json_path = os.path.join(os.path.dirname(__file__), "data", "top_200_vcs.json")
+    json_path = os.path.join(os.path.dirname(__file__), "data", "initial_seed_top_vcs.json")
     
     if not os.path.exists(json_path):
         logger.error(f"JSON data file not found at {json_path}")
