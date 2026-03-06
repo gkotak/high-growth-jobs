@@ -29,7 +29,7 @@ class MultipassScraperAdapter(JobIngestPort):
             genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
         
         self.client = instructor.from_gemini(
-            model="gemini-2.5-flash",
+            client=genai.GenerativeModel(model_name="gemini-2.5-flash"),
             mode=instructor.Mode.GEMINI_JSON,
         )
 
@@ -63,7 +63,7 @@ class MultipassScraperAdapter(JobIngestPort):
             logger.error(f"Static scrape failed: {e}")
             return ""
 
-    def _browser_scrape(self, url: str) -> str:
+    def _browser_scrape(self, url: str, disable_agentic: bool = False) -> str:
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
@@ -74,7 +74,8 @@ class MultipassScraperAdapter(JobIngestPort):
                 page.goto(url, wait_until="domcontentloaded", timeout=60000)
                 
                 # Try Agentic Navigation if we don't see jobs immediately
-                self._navigate_agentically(page)
+                if not disable_agentic:
+                    self._navigate_agentically(page)
                 
                 # Final wait for any lazy-loading content
                 page.wait_for_timeout(10000) 

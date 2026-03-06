@@ -13,6 +13,17 @@ class Tenant(TenantBase, table=True):
     
     companies: List["Company"] = Relationship(back_populates="tenant")
 
+class VCFirmBase(SQLModel):
+    name: str = Field(index=True, unique=True)
+    website_url: str
+    region: Optional[str] = None # US, EU, Global
+    tier: Optional[str] = None # Tier 1, Tier 2, etc.
+
+class VCFirm(VCFirmBase, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    # We will relate this to Companies in Epic 2
+
 class CompanyBase(SQLModel):
     name: str = Field(index=True)
     website_url: str
