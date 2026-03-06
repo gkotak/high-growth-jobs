@@ -9,15 +9,15 @@ from dotenv import load_dotenv
 
 # Try to load env dynamically
 try:
-    from google import genai
+    import openai
     load_dotenv()
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        print("⏭️  Skipping AI review: GEMINI_API_KEY not found in .env")
+        print("⏭️  Skipping AI review: OPENAI_API_KEY not found in .env")
         sys.exit(0)
-    client = genai.Client(api_key=api_key)
+    client = openai.OpenAI(api_key=api_key)
 except ImportError:
-    print("⏭️  Skipping AI review: google-genai library not found. Run `uv sync`.")
+    print("⏭️  Skipping AI review: openai library not found. Run `uv sync`.")
     sys.exit(0)
 
 print("🤖 Running Local AI Code Review...")
@@ -55,11 +55,11 @@ Git Diff:
 """
 
 try:
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=prompt
+    response = client.chat.completions.create(
+        model='gpt-4o-mini',
+        messages=[{"role": "user", "content": prompt}]
     )
-    feedback = response.text.strip()
+    feedback = response.choices[0].message.content.strip()
     
     if feedback.startswith("PASS"):
         print("✅ AI Review Passed: No critical issues found.")
