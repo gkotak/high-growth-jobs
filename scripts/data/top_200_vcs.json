@@ -238,5 +238,401 @@
         "website_url": "https://www.kimaventures.com",
         "region": "EU",
         "tier": "Tier 2"
+    },
+    {
+        "name": "General Atlantic",
+        "website_url": "https://www.generalatlantic.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "TCV",
+        "website_url": "https://www.tcv.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Iconiq Capital",
+        "website_url": "https://iconiqcapital.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Coatue",
+        "website_url": "https://www.coatue.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Addition",
+        "website_url": "https://www.addition.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Ribbit Capital",
+        "website_url": "https://ribbitcap.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Union Square Ventures",
+        "website_url": "https://www.usv.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Foundations",
+        "website_url": "https://www.foundationcapital.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "IVP",
+        "website_url": "https://www.ivp.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Redpoint",
+        "website_url": "https://www.redpoint.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Bain Capital Ventures",
+        "website_url": "https://www.baincapitalventures.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Norwest Venture Partners",
+        "website_url": "https://www.nvp.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "GV (Google Ventures)",
+        "website_url": "https://www.gv.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "CapitalG",
+        "website_url": "https://capitalg.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "True Ventures",
+        "website_url": "https://trueventures.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Firstmark",
+        "website_url": "https://firstmarkcap.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Lux Capital",
+        "website_url": "https://www.luxcapital.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Obvious Ventures",
+        "website_url": "https://obvious.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Felicis",
+        "website_url": "https://www.felicis.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Forerunner Ventures",
+        "website_url": "https://forerunnerventures.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Initialized Capital",
+        "website_url": "https://initialized.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Lerer Hippeau",
+        "website_url": "https://www.lererhippeau.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Upfront Ventures",
+        "website_url": "https://upfront.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Greycroft",
+        "website_url": "https://www.greycroft.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "DCM",
+        "website_url": "https://www.dcm.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Mayfield",
+        "website_url": "https://www.mayfield.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "DCVC",
+        "website_url": "https://www.dcvc.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "8VC",
+        "website_url": "https://8vc.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Scale Venture Partners",
+        "website_url": "https://www.scalevp.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Canvas Ventures",
+        "website_url": "https://www.canvas.vc",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "NFX",
+        "website_url": "https://www.nfx.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "SoftBank Vision Fund",
+        "website_url": "https://visionfund.com",
+        "region": "Global",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "DST Global",
+        "website_url": "https://dst-global.com",
+        "region": "Global",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Musa Capital",
+        "website_url": "https://www.musa-capital.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "GIC",
+        "website_url": "https://www.gic.com.sg",
+        "region": "Global",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Temasek",
+        "website_url": "https://www.temasek.com.sg",
+        "region": "Global",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Tencent Investment",
+        "website_url": "https://www.tencent.com",
+        "region": "Global",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Altimeter Capital",
+        "website_url": "https://www.altimeter.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "D1 Capital Partners",
+        "website_url": "https://www.d1capital.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Susa Ventures",
+        "website_url": "https://susaventures.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "MHS Capital",
+        "website_url": "https://mhscapital.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Breyer Capital",
+        "website_url": "https://breyercapital.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "RRE Ventures",
+        "website_url": "https://www.rre.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Venrock",
+        "website_url": "https://www.venrock.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Canaan",
+        "website_url": "https://www.canaan.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Polaris Partners",
+        "website_url": "https://www.polarispartners.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Morgenthaler Ventures",
+        "website_url": "https://www.morgenthaler.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Atlas Venture",
+        "website_url": "https://www.atlasventure.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "OpenView",
+        "website_url": "https://openviewpartners.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Sapphire Ventures",
+        "website_url": "https://sapphireventures.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Meritech Capital",
+        "website_url": "https://www.meritechcapital.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Highland Capital Partners",
+        "website_url": "https://www.hcp.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Trinity Ventures",
+        "website_url": "https://www.trinityventures.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "August Capital",
+        "website_url": "https://www.augustcap.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Maveron",
+        "website_url": "https://www.maveron.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "U.S. Venture Partners (USVP)",
+        "website_url": "https://www.usvp.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Point72 Ventures",
+        "website_url": "https://p72.vc",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Two Sigma Ventures",
+        "website_url": "https://twosigmaventures.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Target Global",
+        "website_url": "https://www.targetglobal.vc",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Felix Capital",
+        "website_url": "https://www.felixcap.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Dawn Capital",
+        "website_url": "https://dawncapital.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Holtzbrinck Ventures (HV Capital)",
+        "website_url": "https://www.hvcapital.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Wellington Partners",
+        "website_url": "https://www.wellington-partners.com",
+        "region": "EU",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Euronext",
+        "website_url": "https://www.euronext.com",
+        "region": "EU",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Notion Capital",
+        "website_url": "https://www.notion.vc",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Project A Ventures",
+        "website_url": "https://www.project-a.com",
+        "region": "EU",
+        "tier": "Tier 1"
     }
 ]
