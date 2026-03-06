@@ -33,6 +33,7 @@ HighGrowthJobs proposes an **AI-Agent driven search engine**:
 The architecture of HighGrowthJobs follows the **Hexagonal Core** pattern.
 1.  **Alignment:** Every database change in `models.py` MUST be reflected in the API contract.
 2.  **Consistency:** Adhere strictly to the **Dual-Speed Orchestration** pattern (Accelerator for UI events + Janitor for background scraping).
+3.  **Source Control:** DO NOT automatically commit or push code. Every commit and push must be explicitly requested and approved by the USER.
 
 ## Agent Operational Workflow (Chain of Command)
 1.  **Product Phase (Skill: `product-manager`):** Define requirements in `docs/backlog/to-be-done/[epic]/`.

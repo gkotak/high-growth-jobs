@@ -13,16 +13,27 @@ class Tenant(TenantBase, table=True):
     
     companies: List["Company"] = Relationship(back_populates="tenant")
 
+class CompanyVCFirmLink(SQLModel, table=True):
+    company_id: UUID = Field(foreign_key="company.id", primary_key=True)
+    vc_firm_id: UUID = Field(foreign_key="vcfirm.id", primary_key=True)
+
 class VCFirmBase(SQLModel):
     name: str = Field(index=True, unique=True)
     website_url: str
+    portfolio_url: Optional[str] = None
     region: Optional[str] = None # US, EU, Global
     tier: Optional[str] = None # Tier 1, Tier 2, etc.
+    
+    # Differential Ingestion Tracking
+    portfolio_html_hash: Optional[str] = None
+    last_scraped_at: Optional[datetime] = None
 
 class VCFirm(VCFirmBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    # We will relate this to Companies in Epic 2
+    
+    # Relationship to companies
+    companies: List["Company"] = Relationship(back_populates="vc_firms", link_model=CompanyVCFirmLink)
 
 class CompanyBase(SQLModel):
     name: str = Field(index=True)
@@ -35,7 +46,6 @@ class CompanyBase(SQLModel):
     # Growth Signals
     total_funding_usd: Optional[float] = None
     last_funding_round: Optional[str] = None
-    investors: Optional[str] = None # Comma-separated or JSON list
 
 class Company(CompanyBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -46,6 +56,9 @@ class Company(CompanyBase, table=True):
     
     tenant: Tenant = Relationship(back_populates="companies")
     jobs: List["Job"] = Relationship(back_populates="company")
+    
+    # Relationship to VCs back-populates
+    vc_firms: List[VCFirm] = Relationship(back_populates="companies", link_model=CompanyVCFirmLink)
 
 class JobBase(SQLModel):
     title: str = Field(index=True)

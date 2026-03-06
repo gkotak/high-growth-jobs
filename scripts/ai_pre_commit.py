@@ -4,7 +4,7 @@ import subprocess
 import os
 
 # Make sure we can import from src if needed, though this is lightweight
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from dotenv import load_dotenv
 
 # Try to load env dynamically

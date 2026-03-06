@@ -10,18 +10,23 @@ Once the system has a curated list of Top VC firms (from Epic 1), we need to ext
 
 ## Functional Requirements
 
-### 1. The Portfolio Scraper
+### 1. The Portfolio Scraper (Differential Ingestion)
 - **Input**: The `VCFirm` database (list of ~200 top VCs and their websites).
-- **Execution**: Point Playwright to the VC's portfolio URL (often `/portfolio` or `/companies`).
-- **Extraction**: Gemini will take the HTML structure of the page, locate the list of companies, and extract:
+- **Execution**: Point Playwright to the VC's portfolio URL.
+- **HTML Hashing (State Detection)**: Before running the expensive AI extraction, compute a hash of the portfolio page's raw HTML.
+    - If `new_hash == old_hash`: Skip extraction (no new investments detected).
+    - If `new_hash != old_hash`: Trigger deep Agentic Extraction.
+- **Weekly Refresh**: The orchestrator runs once a week, but only spends tokens on VCs that have updated their portfolio sites.
+- **Extraction**: OpenAI (`gpt-4o-mini`) will take the HTML structure, locate the list of companies, and extract:
   - `company_name`
   - `website_url`
-  - `description` (if available)
+  - `description`
 
 ### 2. Company Ingestion Logic
-- **De-duplication**: If multiple top VCs back the same startup, we must not create duplicate companies. We update the existing company record and link the new VC firm.
+- **De-duplication**: If multiple top VCs back the same startup, link the new VC firm to the existing company record.
 - **Data Model update (`models.py`)**:
-    - Update the `Company` model to relate back to our new `VCFirm` model (Many-to-Many or a simple JSON array depending on DB constraints).
+    - Update `VCFirm` with `portfolio_html_hash` and `last_scraped_at`.
+    - Implement a Many-to-Many junction table between `Company` and `VCFirm`.
 
 ## Definition of Done
 - Database is populated with 10,000+ unique startups sourced exclusively from the "Top 200" VC firms in Epic 1.
