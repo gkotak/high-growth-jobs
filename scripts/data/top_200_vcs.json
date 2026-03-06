@@ -1,0 +1,242 @@
+[
+    {
+        "name": "Accel",
+        "website_url": "https://www.accel.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "General Catalyst",
+        "website_url": "https://www.generalcatalyst.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Andreessen Horowitz",
+        "website_url": "https://a16z.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Sequoia Capital",
+        "website_url": "https://www.sequoiacap.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Benchmark",
+        "website_url": "https://www.benchmark.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Founders Fund",
+        "website_url": "https://foundersfund.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Index Ventures",
+        "website_url": "https://www.indexventures.com",
+        "region": "Global",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Lightspeed Venture Partners",
+        "website_url": "https://lsvp.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Khosla Ventures",
+        "website_url": "https://www.khoslaventures.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Bessemer Venture Partners",
+        "website_url": "https://www.bvp.com",
+        "region": "Global",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Tiger Global Management",
+        "website_url": "https://www.tigerglobal.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Greylock",
+        "website_url": "https://greylock.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "New Enterprise Associates (NEA)",
+        "website_url": "https://www.nea.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Dragoneer Investment Group",
+        "website_url": "https://www.dragoneer.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Thrive Capital",
+        "website_url": "https://thrivecap.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Kleiner Perkins",
+        "website_url": "https://www.kleinerperkins.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "First Round Capital",
+        "website_url": "https://firstround.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Menlo Ventures",
+        "website_url": "https://menlovc.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Matrix Partners",
+        "website_url": "https://matrixpartners.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Foundry",
+        "website_url": "https://foundrygroup.com",
+        "region": "US",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Spark Capital",
+        "website_url": "https://www.sparkcapital.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "CRV",
+        "website_url": "https://www.crv.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Insight Partners",
+        "website_url": "https://www.insightpartners.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Battery Ventures",
+        "website_url": "https://www.battery.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Y Combinator",
+        "website_url": "https://www.ycombinator.com",
+        "region": "US",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Atomico",
+        "website_url": "https://www.atomico.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Balderton Capital",
+        "website_url": "https://www.balderton.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Creandum",
+        "website_url": "https://www.creandum.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Seedcamp",
+        "website_url": "https://seedcamp.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Northzone",
+        "website_url": "https://northzone.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Point Nine Capital",
+        "website_url": "https://www.pointninecap.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "LocalGlobe",
+        "website_url": "https://localglobe.vc",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Cherry Ventures",
+        "website_url": "https://www.cherry.vc",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "HV Capital",
+        "website_url": "https://www.hvcapital.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Speedinvest",
+        "website_url": "https://speedinvest.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "EQT Ventures",
+        "website_url": "https://eqtventures.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Earlybird Venture Capital",
+        "website_url": "https://earlybird.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Lakestar",
+        "website_url": "https://lakestar.com",
+        "region": "EU",
+        "tier": "Tier 1"
+    },
+    {
+        "name": "Hoxton Ventures",
+        "website_url": "https://www.hoxtonventures.com",
+        "region": "EU",
+        "tier": "Tier 2"
+    },
+    {
+        "name": "Kima Ventures",
+        "website_url": "https://www.kimaventures.com",
+        "region": "EU",
+        "tier": "Tier 2"
+    }
+]
