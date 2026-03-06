@@ -19,6 +19,8 @@ We have completed the core scraping engine and the background "Janitor" service.
 - **AI**: Gemini 2.0 / 1.5 (via Instructor)
 
 ## 4. Pending Tasks
-- [ ] **Epic 3: Discovery UI**: Build the searchable frontend for users to filter by "Growth Signal".
-- [ ] **Epic 1: Company Ingestion**: Feed the DB with more than just the seed companies (Need a broad VC-portfolio list).
+- [ ] **Epic 1: VC Firm Ingestion**: Curate the Top 200 VC firms + USER's personal network (Contacts).
+- [ ] **Epic 2: Portfolio Company Discovery**: Build the agentic portfolio scraper to find all startups backed by Epic 1 VCs.
+- [ ] **Epic 3: Job Scraping Engine**: (V1 completed for OpenAI, Stripe, Anthropic - Need to scale to the 10,000+ Epic 2 companies).
+- [ ] **Epic 4: Discovery UI**: Build the searchable frontend for users to filter by "Growth Signal".
 - [ ] **Railway Deployment**: Finalize automation of the Janitor cron task.

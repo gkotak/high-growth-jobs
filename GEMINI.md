@@ -44,10 +44,11 @@ The architecture of HighGrowthJobs follows the **Hexagonal Core** pattern.
 *   **Phase:** Initial Scaffolding.
 *   **Primary Achievement:** Established the de-branded Agent Skill set and the "Universal Blueprint" directory structure.
 *   **Roadmap:**
-    1.  **Company Ingestion (Epic 1):** Seed the DB with VC-backed startups and investment metadata.
-    2.  **Job Scraping (Epic 2):** Implement the `MarketScraper` to ingest and normalize job posts.
-    3.  **Discovery UI (Epic 3):** Build the searchable "GrowthUI" portal with advanced filtering.
-    4.  **Network Intelligence (Epic 4 - V2):** LinkedIn integration to discover internal referrals.
-    5.  **Signal Enrichment (Epic 5 - V2):** Ingest G2/Trustpilot scores and total growth metrics.
-    6.  **Culture Agent (Epic 6 - V2):** Voice AI Agent for culture-focused interview preparation.
+    1.  **VC Firm Ingestion (Epic 1):** Curate and track the global Top 200 VC firms (and USER contact connections) as the master discovery seed.
+    2.  **Portfolio Company Discovery (Epic 2):** Scrape VC portfolio pages to build a massive directory of high-growth startups linked to those VCs.
+    3.  **Job Scraping (Epic 3):** Implement the `MarketScraper` to ingest and normalize job posts from our discovered companies.
+    4.  **Discovery UI (Epic 4):** Build the searchable "GrowthUI" portal with advanced filtering.
+    5.  **Network Intelligence (Epic 5):** LinkedIn integration to discover internal referrals.
+    6.  **Signal Enrichment (Epic 6):** Ingest G2/Trustpilot scores and total growth metrics.
+    7.  **Culture Agent (Epic 7):** Voice AI Agent for culture-focused interview preparation.
 
