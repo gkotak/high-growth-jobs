@@ -47,4 +47,7 @@ The architecture of HighGrowthJobs follows the **Hexagonal Core** pattern.
     1.  **Company Ingestion (Epic 1):** Seed the DB with VC-backed startups and investment metadata.
     2.  **Job Scraping (Epic 2):** Implement the `MarketScraper` to ingest and normalize job posts.
     3.  **Discovery UI (Epic 3):** Build the searchable "GrowthUI" portal with advanced filtering.
+    4.  **Network Intelligence (Epic 4 - V2):** LinkedIn integration to discover internal referrals.
+    5.  **Signal Enrichment (Epic 5 - V2):** Ingest G2/Trustpilot scores and total growth metrics.
+    6.  **Culture Agent (Epic 6 - V2):** Voice AI Agent for culture-focused interview preparation.
 

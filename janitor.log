@@ -1,0 +1,68 @@
+2026-03-06 17:31:04,101 [INFO] src.app.services.janitor: Janitor starting sync for 3 companies
+2026-03-06 17:31:04,102 [INFO] src.app.services.janitor: Cleaning/Syncing OpenAI...
+2026-03-06 17:31:04,102 [INFO] src.app.core.orchestrator: Checking ATS for OpenAI
+2026-03-06 17:31:04,102 [INFO] src.app.core.orchestrator: Using Multipass Scraper for OpenAI
+2026-03-06 17:31:04,102 [INFO] src.app.adapters.scraper: Attempting static scrape for https://openai.com/careers
+2026-03-06 17:31:04,243 [INFO] httpx: HTTP Request: GET https://openai.com/careers "HTTP/1.1 403 Forbidden"
+2026-03-06 17:31:04,246 [INFO] src.app.adapters.scraper: JavaScript wall detected. Retrying with Playwright...
+2026-03-06 17:31:05,012 [INFO] src.app.adapters.scraper: Navigating to https://openai.com/careers via Browser...
+2026-03-06 17:31:05,266 [INFO] src.app.adapters.scraper: Sending 41 characters to Gemini for extraction...
+2026-03-06 17:31:14,149 [INFO] src.app.adapters.scraper: Gemini extracted 0 jobs.
+2026-03-06 17:31:14,149 [WARNING] src.app.services.janitor: No jobs found for OpenAI. Skipping diff.
+2026-03-06 17:31:14,289 [INFO] src.app.services.janitor: Cleaning/Syncing Stripe...
+2026-03-06 17:31:14,289 [INFO] src.app.core.orchestrator: Checking ATS for Stripe
+2026-03-06 17:31:14,289 [INFO] src.app.core.orchestrator: Using Multipass Scraper for Stripe
+2026-03-06 17:31:14,289 [INFO] src.app.adapters.scraper: Attempting static scrape for https://stripe.com/jobs/search
+2026-03-06 17:31:15,644 [INFO] httpx: HTTP Request: GET https://stripe.com/jobs/search "HTTP/1.1 200 OK"
+2026-03-06 17:31:15,751 [INFO] src.app.adapters.scraper: Sending 6560 characters to Gemini for extraction...
+2026-03-06 17:32:06,261 [INFO] src.app.adapters.scraper: Gemini extracted 100 jobs.
+2026-03-06 17:32:06,473 [INFO] src.app.services.janitor: Done with Stripe. New: 1, Closed: 2
+2026-03-06 17:32:06,601 [INFO] src.app.services.janitor: Cleaning/Syncing Anthropic...
+2026-03-06 17:32:06,601 [INFO] src.app.core.orchestrator: Checking ATS for Anthropic
+2026-03-06 17:32:06,886 [INFO] httpx: HTTP Request: GET https://boards-api.greenhouse.io/v1/boards/anthropic/jobs "HTTP/1.1 200 OK"
+2026-03-06 17:32:06,913 [INFO] src.app.core.orchestrator: Found 450 jobs via ATS Linker for Anthropic
+2026-03-06 17:32:07,397 [INFO] src.app.services.janitor: Done with Anthropic. New: 450, Closed: 2
+2026-03-06 17:36:18,186 [INFO] src.app.services.janitor: Janitor starting sync for 3 companies
+2026-03-06 17:36:18,187 [INFO] src.app.services.janitor: Cleaning/Syncing Stripe...
+2026-03-06 17:36:18,187 [INFO] src.app.core.orchestrator: Checking ATS for Stripe
+2026-03-06 17:36:18,187 [INFO] src.app.core.orchestrator: Using Multipass Scraper for Stripe
+2026-03-06 17:36:18,187 [INFO] src.app.adapters.scraper: Attempting static scrape for https://stripe.com/jobs/search
+2026-03-06 17:36:19,382 [INFO] httpx: HTTP Request: GET https://stripe.com/jobs/search "HTTP/1.1 200 OK"
+2026-03-06 17:36:19,477 [INFO] src.app.adapters.scraper: Sending 8824 characters to Gemini for extraction...
+2026-03-06 17:37:02,598 [INFO] src.app.adapters.scraper: Gemini extracted 97 jobs.
+2026-03-06 17:37:02,731 [INFO] src.app.services.janitor: Done with Stripe. New: 0, Closed: 0
+2026-03-06 17:37:02,867 [INFO] src.app.services.janitor: Cleaning/Syncing Anthropic...
+2026-03-06 17:37:02,867 [INFO] src.app.core.orchestrator: Checking ATS for Anthropic
+2026-03-06 17:37:03,092 [INFO] httpx: HTTP Request: GET https://boards-api.greenhouse.io/v1/boards/anthropic/jobs "HTTP/1.1 200 OK"
+2026-03-06 17:37:03,123 [INFO] src.app.core.orchestrator: Found 450 jobs via ATS Linker for Anthropic
+2026-03-06 17:37:03,394 [INFO] src.app.services.janitor: Done with Anthropic. New: 0, Closed: 0
+2026-03-06 17:37:03,533 [INFO] src.app.services.janitor: Cleaning/Syncing OpenAI...
+2026-03-06 17:37:03,533 [INFO] src.app.core.orchestrator: Checking ATS for OpenAI
+2026-03-06 17:37:03,533 [INFO] src.app.core.orchestrator: Using Multipass Scraper for OpenAI
+2026-03-06 17:37:03,533 [INFO] src.app.adapters.scraper: Attempting static scrape for https://openai.com/careers/search
+2026-03-06 17:37:03,645 [INFO] httpx: HTTP Request: GET https://openai.com/careers/search "HTTP/1.1 403 Forbidden"
+2026-03-06 17:37:03,646 [INFO] src.app.adapters.scraper: JavaScript wall detected. Retrying with Playwright...
+2026-03-06 17:37:04,473 [INFO] src.app.adapters.scraper: Navigating to https://openai.com/careers/search via Browser...
+2026-03-06 17:37:14,737 [WARNING] src.app.adapters.scraper: Extracted text is very short (117 chars). Site might be blocking or empty.
+2026-03-06 17:37:14,737 [INFO] src.app.adapters.scraper: Sending 895 characters to Gemini for extraction...
+2026-03-06 17:37:18,944 [INFO] src.app.adapters.scraper: Gemini extracted 0 jobs.
+2026-03-06 17:37:18,945 [WARNING] src.app.services.janitor: No jobs found for OpenAI. Skipping diff.
+2026-03-06 17:42:23,156 [INFO] src.app.services.janitor: Janitor starting sync for 3 companies
+2026-03-06 17:42:23,157 [INFO] src.app.services.janitor: Cleaning/Syncing Stripe...
+2026-03-06 17:42:23,157 [INFO] src.app.core.orchestrator: Checking ATS for Stripe
+2026-03-06 17:42:23,157 [INFO] src.app.core.orchestrator: Probing ATS for Stripe
+2026-03-06 17:42:23,397 [INFO] httpx: HTTP Request: GET https://api.ashbyhq.com/posting-api/job-board/stripe "HTTP/1.1 404 Not Found"
+2026-03-06 17:42:26,680 [INFO] httpx: HTTP Request: GET https://boards-api.greenhouse.io/v1/boards/stripe/jobs "HTTP/1.1 200 OK"
+2026-03-06 17:42:26,728 [INFO] src.app.core.orchestrator: Found 569 jobs via ATS Probing for Stripe
+2026-03-06 17:42:27,336 [INFO] src.app.services.janitor: Done with Stripe. New: 569, Closed: 1
+2026-03-06 17:42:27,490 [INFO] src.app.services.janitor: Cleaning/Syncing Anthropic...
+2026-03-06 17:42:27,491 [INFO] src.app.core.orchestrator: Checking ATS for Anthropic
+2026-03-06 17:42:27,773 [INFO] httpx: HTTP Request: GET https://boards-api.greenhouse.io/v1/boards/anthropic/jobs "HTTP/1.1 200 OK"
+2026-03-06 17:42:27,963 [INFO] src.app.core.orchestrator: Found 451 jobs via ATS Linker for Anthropic
+2026-03-06 17:42:28,212 [INFO] src.app.services.janitor: Done with Anthropic. New: 1, Closed: 0
+2026-03-06 17:42:28,354 [INFO] src.app.services.janitor: Cleaning/Syncing OpenAI...
+2026-03-06 17:42:28,354 [INFO] src.app.core.orchestrator: Checking ATS for OpenAI
+2026-03-06 17:42:28,354 [INFO] src.app.core.orchestrator: Probing ATS for OpenAI
+2026-03-06 17:42:28,469 [INFO] httpx: HTTP Request: GET https://api.ashbyhq.com/posting-api/job-board/openai "HTTP/1.1 200 OK"
+2026-03-06 17:42:28,656 [INFO] src.app.core.orchestrator: Found 616 jobs via ATS Probing for OpenAI
+2026-03-06 17:42:29,262 [INFO] src.app.services.janitor: Done with OpenAI. New: 616, Closed: 2
