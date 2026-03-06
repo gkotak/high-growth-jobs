@@ -115,7 +115,8 @@ class MultipassScraperAdapter(JobIngestPort):
                 reason: str
 
             # Ask Gemini which element to click
-            prompt = f"Given these UI elements found on a career site's landing page, return the TEXT of the one most likely to lead to a list of ALL job openings or a 'Search jobs' view. If already looking at a list of job titles, return 'NONE'. \n\nElements: {elements}"
+            from src.app.core.prompts import MULTIPASS_NAVIGATION_PROMPT
+            prompt = MULTIPASS_NAVIGATION_PROMPT.format(elements=elements)
             
             action = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
@@ -162,15 +163,16 @@ class MultipassScraperAdapter(JobIngestPort):
         logger.info(f"Sending {len(clean_text[:15000])} characters to Gemini for extraction...")
 
         try:
+            from src.app.core.prompts import MULTIPASS_JOB_EXTRACTION_SYSTEM, MULTIPASS_JOB_EXTRACTION_USER
             response = self.client.chat.completions.create(
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert at extracting job listings from website content. Return a JSON list of jobs found."
+                        "content": MULTIPASS_JOB_EXTRACTION_SYSTEM
                     },
                     {
                         "role": "user",
-                        "content": f"Extract all job listings from this content. Ensure URLs are absolute using {base_url} if needed. \n\nContent:\n{clean_text}"
+                        "content": MULTIPASS_JOB_EXTRACTION_USER.format(base_url=base_url, clean_text=clean_text)
                     }
                 ],
                 response_model=JobList,

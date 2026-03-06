@@ -83,16 +83,8 @@ class VCPortfolioScraperAdapter:
 
         logger.info(f"Extracted {len(text_preview)} chars from {vc_name} HTML. Sending to OpenAI...")
 
-        prompt = f"""
-        You are an expert data extractor. I am giving you the text content of the {vc_name} venture capital 'Portfolio' web page.
-        
-        Extract a list of every single startup / company listed as an investment.
-        If a URL for the company is provided on the page (or you can confidently deduce their primary URL), include it.
-        If a short description is provided next to the name, include it.
-        
-        PAGE TEXT:
-        {text_preview}
-        """
+        from src.app.core.prompts import PORTFOLIO_EXTRACTION_PROMPT
+        prompt = PORTFOLIO_EXTRACTION_PROMPT.format(vc_name=vc_name, text_preview=text_preview)
 
         try:
             # We use parse() to enforce the Pydantic schema easily in new OpenAI SDK

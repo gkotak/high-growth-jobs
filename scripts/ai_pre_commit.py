@@ -35,24 +35,10 @@ if len(diff_text) > 20000:
     print("⏭️  Skipping AI review: Diff is too large (>20,000 chars)")
     sys.exit(0)
 
+from src.app.core.prompts import AI_PRE_COMMIT_REVIEW_PROMPT
+
 # 2. Ask Gemini to review the code
-prompt = f"""
-You are an expert Senior Staff Software Engineer reviewing a Git commit.
-Review the following split git diff.
-
-Identify ANY of the following:
-1. Security vulnerabilities (especially secrets/API keys left in code).
-2. Obvious bugs, syntax errors, or logic errors.
-3. Severe performance bottlenecks.
-
-If the code looks good and has no critical issues, ONLY output "PASS".
-If there are critical issues that should block this commit, output "FAIL" followed by a concise bulleted list explaining why.
-
-Git Diff:
-```diff
-{diff_text}
-```
-"""
+prompt = AI_PRE_COMMIT_REVIEW_PROMPT.format(diff_text=diff_text)
 
 try:
     response = client.chat.completions.create(
