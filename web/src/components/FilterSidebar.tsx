@@ -46,6 +46,10 @@ const MultiSelectDropdown = ({
     <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1" align="start">
       {options.map((option) => {
         const isActive = selected.includes(option);
+        const checkboxClasses = isActive
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-input";
+
         return (
           <button
             key={option}
@@ -53,10 +57,7 @@ const MultiSelectDropdown = ({
             className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             <div
-              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${isActive
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-input"
-                }`}
+              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${checkboxClasses}`}
             >
               {isActive && (
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -147,8 +148,8 @@ const FilterSidebar = ({ filters, onFilterChange }: FilterSidebarProps) => {
           onFilterChange({ ...filters, investorTier: !filters.investorTier })
         }
         className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm transition-all duration-200 ${filters.investorTier
-            ? "border-primary bg-primary/10 text-primary-foreground shadow-sm font-medium"
-            : "border-input bg-background text-muted-foreground hover:bg-muted"
+          ? "border-primary bg-primary/10 text-primary-foreground shadow-sm font-medium"
+          : "border-input bg-background text-muted-foreground hover:bg-muted"
           }`}
       >
         <span className="flex items-center gap-2">
