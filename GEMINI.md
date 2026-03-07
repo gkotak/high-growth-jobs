@@ -34,6 +34,7 @@ The architecture of HighGrowthJobs follows the **Hexagonal Core** pattern.
 1.  **Alignment:** Every database change in `models.py` MUST be reflected in the API contract.
 2.  **Consistency:** Adhere strictly to the **Dual-Speed Orchestration** pattern (Accelerator for UI events + Janitor for background scraping).
 3.  **Source Control:** DO NOT automatically commit or push code. Every commit and push must be explicitly requested and approved by the USER.
+4.  **AI Code Review:** ALWAYS run the AI pre-commit code review and PAUSE to present the full findings (suggestions/warnings) to the USER before committing. The USER MUST approve the code review outcome before the commit proceeds.
 
 ## Agent Operational Workflow (Chain of Command)
 1.  **Product Phase (Skill: `product-manager`):** Define requirements in `docs/backlog/to-be-done/[epic]/`.
