@@ -7,12 +7,40 @@ import FilterSidebar from "@/components/FilterSidebar";
 import JobCard from "@/components/JobCard";
 import CompanySheet from "@/components/CompanySheet";
 import { useJobs } from "@/hooks/useJobs";
-
+import { AnimatePresence, motion } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 const TOP_TIER_VCS = [
   "Sequoia Capital", "a16z", "Benchmark", "Founders Fund", "Accel",
   "Greylock", "Kleiner Perkins", "Index Ventures", "General Catalyst",
   "Tiger Global", "Thrive Capital", "Coatue Management",
 ];
+
+const JobCardSkeleton = () => (
+  <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
+    <div className="flex gap-3 sm:gap-4">
+      <Skeleton className="h-10 w-10 rounded-lg sm:h-12 sm:w-12" />
+      <div className="flex-1 space-y-2">
+        <div className="flex justify-between">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+        <Skeleton className="h-3 w-1/4" />
+        <div className="flex gap-2">
+          <Skeleton className="h-5 w-16 rounded-full" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 const FUNDING_STAGE_MAP: Record<string, string[]> = {
   "Seed": ["Seed"],
@@ -26,6 +54,7 @@ const FUNDING_STAGE_MAP: Record<string, string[]> = {
 const Index = () => {
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(true);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [filters, setFilters] = useState({
     roleType: [] as string[],
     experienceLevel: [] as string[],
@@ -36,6 +65,16 @@ const Index = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
   const { data: jobs = [], isLoading } = useJobs();
+
+  const activeFilterCount = useMemo(() => {
+    return (
+      filters.roleType.length +
+      filters.experienceLevel.length +
+      filters.remote.length +
+      filters.fundingStage.length +
+      (filters.investorTier ? 1 : 0)
+    );
+  }, [filters]);
 
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
@@ -82,7 +121,7 @@ const Index = () => {
 
       return true;
     });
-  }, [search, filters]);
+  }, [search, filters, jobs]);
 
   const selectedCompany = selectedCompanyId
     ? jobs.find((j) => j.company.id === selectedCompanyId)?.company ?? null
@@ -126,69 +165,110 @@ const Index = () => {
 
       {/* Main Content */}
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        {/* Mobile filter toggle */}
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="mb-4 flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted lg:hidden"
-        >
-          {showFilters ? <X className="h-4 w-4" /> : <SlidersHorizontal className="h-4 w-4" />}
-          {showFilters ? "Hide Filters" : "Filters"}
-        </button>
-
-        <div className="flex gap-6">
-          {/* Sidebar */}
-          {showFilters && (
-            <aside className="hidden w-64 shrink-0 lg:block">
-              <div className="sticky top-20">
-                <FilterSidebar filters={filters} onFilterChange={setFilters} />
-              </div>
-            </aside>
-          )}
-
-          {/* Mobile sidebar */}
-          {showFilters && (
-            <aside className="mb-4 w-full lg:hidden">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Sidebar - Desktop only */}
+          <aside className={`hidden shrink-0 lg:block transition-all duration-300 ${showFilters ? "w-64 opacity-100" : "w-0 opacity-0 overflow-hidden"}`}>
+            <div className="sticky top-20">
               <FilterSidebar filters={filters} onFilterChange={setFilters} />
-            </aside>
-          )}
+            </div>
+          </aside>
 
           {/* Job List */}
           <main className="min-w-0 flex-1">
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground">{filteredJobs.length}</span>{" "}
-                {filteredJobs.length === 1 ? "role" : "roles"} found
-              </p>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="hidden items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted lg:flex"
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                {showFilters ? "Hide Filters" : "Show Filters"}
-              </button>
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">{filteredJobs.length}</span>{" "}
+                  {filteredJobs.length === 1 ? "role" : "roles"} found
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Mobile filter trigger */}
+                <Sheet open={isMobileFiltersOpen} onOpenChange={setIsMobileFiltersOpen}>
+                  <SheetTrigger asChild>
+                    <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:bg-muted active:scale-95 lg:hidden">
+                      <SlidersHorizontal className="h-3.5 w-3.5" />
+                      Filters
+                      {activeFilterCount > 0 && (
+                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                          {activeFilterCount}
+                        </span>
+                      )}
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-full sm:max-w-xs">
+                    <SheetHeader className="mb-6">
+                      <SheetTitle>Filters</SheetTitle>
+                      <SheetDescription>
+                        Narrow down your search by role, stage, and signals.
+                      </SheetDescription>
+                    </SheetHeader>
+                    <FilterSidebar filters={filters} onFilterChange={setFilters} />
+                    <div className="mt-8">
+                      <button
+                        onClick={() => setIsMobileFiltersOpen(false)}
+                        className="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                      >
+                        Show {filteredJobs.length} roles
+                      </button>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+
+                {/* Desktop filter toggle */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="hidden items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:bg-muted active:scale-95 lg:flex"
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  {showFilters ? "Hide Filters" : "Show Filters"}
+                  {!showFilters && activeFilterCount > 0 && (
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {isLoading ? (
-                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
-                  <p className="text-sm font-medium text-foreground">Loading high-growth roles...</p>
-                </div>
-              ) : filteredJobs.length > 0 ? (
-                filteredJobs.map((job, i) => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    index={i}
-                    onCompanyClick={setSelectedCompanyId}
-                  />
+                Array.from({ length: 5 }).map((_, i) => (
+                  <JobCardSkeleton key={i} />
                 ))
               ) : (
-                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
-                  <p className="text-sm font-medium text-foreground">No roles match your filters</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Try adjusting your search or filters
-                  </p>
-                </div>
+                <AnimatePresence mode="popLayout">
+                  {filteredJobs.length > 0 ? (
+                    filteredJobs.map((job, i) => (
+                      <motion.div
+                        key={job.id}
+                        layout
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.2, delay: i * 0.05 }}
+                      >
+                        <JobCard
+                          job={job}
+                          index={i}
+                          onCompanyClick={setSelectedCompanyId}
+                        />
+                      </motion.div>
+                    ))
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-20 text-center"
+                    >
+                      <p className="text-base font-semibold text-foreground">No roles match your filters</p>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Try adjusting your search or clearing some filters to see more opportunities.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               )}
             </div>
           </main>

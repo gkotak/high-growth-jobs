@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Clock, DollarSign, Briefcase, ExternalLink, Globe } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import SignalBadge from "@/components/SignalBadge";
 import { formatFunding } from "@/data/mockJobs";
@@ -109,7 +109,7 @@ const JobDetail = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-10 pb-32 sm:pb-10">
         {/* Back button */}
         <button
           onClick={() => navigate("/")}
@@ -158,7 +158,7 @@ const JobDetail = () => {
               </div>
               <Button
                 variant="outline"
-                className="shrink-0 self-start"
+                className="shrink-0 self-start lg:flex hidden"
                 onClick={() => window.open(company.careerUrl, "_blank")}
               >
                 View all careers
@@ -266,12 +266,30 @@ const JobDetail = () => {
               size="lg"
               onClick={() => window.open(company.careerUrl, "_blank")}
             >
-              View all careers
+              Apply on Company Site
               <ExternalLink className="h-4 w-4" />
             </Button>
           </div>
         </motion.div>
       </div>
+
+      {/* Sticky mobile CTA */}
+      <AnimatePresence>
+        <motion.div
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/80 p-4 backdrop-blur-md sm:hidden"
+        >
+          <Button
+            className="w-full shadow-lg"
+            size="lg"
+            onClick={() => window.open(company.careerUrl, "_blank")}
+          >
+            Apply Now
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };

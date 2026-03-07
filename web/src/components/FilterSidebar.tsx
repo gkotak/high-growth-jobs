@@ -53,11 +53,10 @@ const MultiSelectDropdown = ({
             className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             <div
-              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${
-                isActive
+              className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border ${isActive
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-input"
-              }`}
+                }`}
             >
               {isActive && (
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -143,23 +142,21 @@ const FilterSidebar = ({ filters, onFilterChange }: FilterSidebarProps) => {
         onToggle={(v) => toggleFilter("fundingStage", v)}
       />
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <button
-            onClick={() =>
-              onFilterChange({ ...filters, investorTier: !filters.investorTier })
-            }
-            className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors ${
-              filters.investorTier
-                ? "border-primary bg-primary/10 text-foreground"
-                : "border-input bg-background text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            <span>⭐ Top Tier VCs Only</span>
-            {filters.investorTier && <X className="h-3.5 w-3.5 text-foreground" />}
-          </button>
-        </PopoverTrigger>
-      </Popover>
+      <button
+        onClick={() =>
+          onFilterChange({ ...filters, investorTier: !filters.investorTier })
+        }
+        className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm transition-all duration-200 ${filters.investorTier
+            ? "border-primary bg-primary/10 text-primary-foreground shadow-sm font-medium"
+            : "border-input bg-background text-muted-foreground hover:bg-muted"
+          }`}
+      >
+        <span className="flex items-center gap-2">
+          <span className={filters.investorTier ? "text-primary" : "text-muted-foreground"}>⭐</span>
+          Top Tier VCs Only
+        </span>
+        {filters.investorTier && <X className="h-3.5 w-3.5" />}
+      </button>
     </div>
   );
 };
