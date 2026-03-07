@@ -25,7 +25,7 @@ if not DATABASE_URL:
 
 engine = create_engine(DATABASE_URL)
 
-def parse_int(val: str) -> Optional[int]:
+def parse_int(val: str, column_name: str = "Unknown") -> Optional[int]:
     """Helper to parse Crunchbase integer strings (e.g., '1,049' -> 1049)."""
     if not val or val == '—':
         return None
@@ -34,6 +34,7 @@ def parse_int(val: str) -> Optional[int]:
         clean_val = val.replace(',', '').strip()
         return int(clean_val)
     except ValueError:
+        logger.warning(f"Failed to parse '{val}' as integer for column '{column_name}'")
         return None
 
 def import_csv(file_path: str):
@@ -77,12 +78,12 @@ def import_csv(file_path: str):
                     updated_count += 1
                 
                 # Map Crunchbase data
-                vc.num_portfolio_orgs = parse_int(row.get('Number of Portfolio Organizations'))
+                vc.num_portfolio_orgs = parse_int(row.get('Number of Portfolio Organizations'), 'Number of Portfolio Organizations')
                 vc.investor_type = row.get('Investor Type', '').strip() or None
-                vc.num_investments = parse_int(row.get('Number of Investments'))
-                vc.num_exits = parse_int(row.get('Number of Exits'))
+                vc.num_investments = parse_int(row.get('Number of Investments'), 'Number of Investments')
+                vc.num_exits = parse_int(row.get('Number of Exits'), 'Number of Exits')
                 vc.location = row.get('Location', '').strip() or None
-                vc.cb_rank = parse_int(row.get('CB Rank (Investor)'))
+                vc.cb_rank = parse_int(row.get('CB Rank (Investor)'), 'CB Rank (Investor)')
                 
                 session.add(vc)
                 

@@ -20,8 +20,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    """Upgrade schema."""
-    op.add_column('vcfirm', sa.Column('is_stub', sa.Boolean(), nullable=False, server_default='false'))
+    """
+    Upgrade schema: adds the `is_stub` boolean column to `vcfirm`.
+    This column differentiates dynamically generated VC stubs (e.g. from Axios daily ingest)
+    from canonical VC records manually seeded.
+    """
+    op.add_column('vcfirm', sa.Column('is_stub', sa.Boolean(), nullable=False, server_default=sa.text('false')))
     # ### end Alembic commands ###
 
 

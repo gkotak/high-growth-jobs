@@ -144,6 +144,7 @@ def upsert_deals(deals: List[FundingDeal]):
         created_comps = 0
         updated_comps = 0
         created_vcs = 0
+        seen_links = set()
         
         for deal in deals:
             # Query Company by name (case-insensitive approximation)
@@ -195,6 +196,11 @@ def upsert_deals(deals: List[FundingDeal]):
                     created_vcs += 1
                 
                 # Check for existing link
+                link_key = (company.id, vc.id)
+                if link_key in seen_links:
+                    continue
+                seen_links.add(link_key)
+                
                 link_stmt = select(CompanyVCFirmLink).where(
                     CompanyVCFirmLink.company_id == company.id,
                     CompanyVCFirmLink.vc_firm_id == vc.id

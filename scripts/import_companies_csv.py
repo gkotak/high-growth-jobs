@@ -23,12 +23,13 @@ if not DATABASE_URL:
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
-def parse_int(val: str) -> Optional[int]:
+def parse_int(val: str, column_name: str = "Unknown") -> Optional[int]:
     if not val or val == '—':
         return None
     try:
         return int(val.replace(',', '').strip())
     except ValueError:
+        logger.warning(f"Failed to parse '{val}' as integer for column '{column_name}'")
         return None
 
 def parse_date(val: str):
@@ -87,7 +88,7 @@ def import_companies(file_path: str):
             ind = row.get('Industries', '').strip() or None
             loc = row.get('Headquarters Location', '').strip() or None
             desc = row.get('Description', '').strip() or None
-            rank = parse_int(row.get('CB Rank (Company)'))
+            rank = parse_int(row.get('CB Rank (Company)'), 'CB Rank (Company)')
             rev = row.get('Estimated Revenue Range', '').strip() or None
             
             comp_id = comp_map.get(name.lower())
