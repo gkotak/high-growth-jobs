@@ -2,25 +2,27 @@
 
 **Last Updated**: 2026-03-06
 
-## 1. Phase: Ingestion & Scaffolding
-We have completed the core scraping engine and the background "Janitor" service. The system is now capable of ingesting high-volume job data from top-tier startups.
+## 1. Phase: Ingestion & Seed Data Population
+We have completed Epics 1 and 2, transitioning entirely to a robust "Signal-First" ingestion methodology rather than brittle DOM scraping of VC websites. Data mapping is managed through our SQLModel canonical layers, and differential updates handle new signals with high precision.
 
 ## 2. Key Achievements
-- **Multi-Level Scraper**: Built a 4-speed hierarchy (API -> Proactive Probe -> Static -> Browser).
-- **Agentic Navigation**: Implemented Level 2 Logic that uses Gemini to "click" through landing pages.
-- **Janitor Service**: Created the background synchronization loop that handles deduplication (New/Closed jobs).
-- **Core Database**: Established SQLModel-based Postgres schema in Supabase.
-- **Data Load**: 1,600+ real jobs ingested from OpenAI (616), Stripe (569), and Anthropic (451).
+- **VC Firm Seed Ingestion (Epic 1)**: Integrated Crunchbase top VCs utilizing our `/scripts/import_vcfirms_csv.py` batch job. Enabled "Stub Creation" allowing graceful handling of un-seeded niche investors.
+- **Company Seed Ingestion & Linkages (Epic 2a)**: Integrated >900 high-growth companies from Crunchbase, dynamically deriving `CompanyVCFirmLink` junction table objects directly from string names in memory.
+- **Daily Signal Monitoring (Epic 2b)**: Deployed `scripts/ingest_axios_prorata.py`—an LLM-powered background task (`gpt-4o-mini`) to seamlessly parse unformatted financial newsletter bullets (Axios Pro Rata) and extract structured Pydantic representations of Company Funding rounds (including Seed and Pre-Seed).
+- **Multi-Level Scraper Prototype**: Built a 4-speed hierarchy (API -> Proactive Probe -> Static -> Browser) initially. Scaled to handle OpenAI, Stripe, and Anthropic.
+- **Core Database**: Established SQLModel-based Postgres schema in Supabase with fully normalized types (Stage, Investment Bounds, CB Rank).
 
 ## 3. Tech Stack
 - **Backend**: FastAPI / Python
 - **Database**: PostgreSQL (SQLModel / Alembic)
-- **Scraping**: HTTpx + Playwright (Stealth)
-- **AI**: Gemini 2.0 / 1.5 (via Instructor)
+- **Scraping/Ingestion**: HTTpx + Playwright (Stealth), plus robust local CSV loaders decoupled from DB locks.
+- **AI**: OpenAI `gpt-4o-mini` with Pydantic strict parsing for unstructured text; Gemini 2.0 / 1.5 (via Instructor) for complex site navigation.
 
 ## 4. Pending Tasks
-- [ ] **Epic 1: VC Firm Ingestion**: Curate the Top 200 VC firms + USER's personal network (Contacts).
-- [ ] **Epic 2: Portfolio Company Discovery**: Build the agentic portfolio scraper to find all startups backed by Epic 1 VCs.
-- [ ] **Epic 3: Job Scraping Engine**: (V1 completed for OpenAI, Stripe, Anthropic - Need to scale to the 10,000+ Epic 2 companies).
+- [x] **Epic 1: VC Firm Ingestion**
+- [x] **Epic 2: Portfolio Company Discovery**
+- [ ] **Epic 3: Job Scraping Engine**: (Scale the V1 prototype across our new 1,000+ Company targets).
 - [ ] **Epic 4: Discovery UI**: Build the searchable frontend for users to filter by "Growth Signal".
-- [ ] **Railway Deployment**: Finalize automation of the Janitor cron task.
+- [ ] **Epic 5: Network Intelligence**: LinkedIn integration to display referral warmth.
+- [ ] **Epic 6: Signal Enrichment**: Ingest contextual quality scores (G2, TrustPilot, etc).
+- [ ] **Epic 7: Culture Agent**: Voice AI Agent for culture-focused interview preparation.

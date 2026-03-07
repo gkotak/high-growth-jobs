@@ -1,33 +1,46 @@
-# Epic 2: Portfolio Company Discovery
+# Epic 2: High-Growth Company Discovery & Signal Enrichment
 
 ## Overview
-Once the system has a curated list of Top VC firms (from Epic 1), we need to extract the "Winners." This epic will use AI-driven scraping techniques to visit each VC firm's portfolio page, discover the companies they back, and insert them into our primary `Company` database table.
+Once the system has a curated list of Top VC firms (from Epic 1), we need to extract the "Winners." This epic abandons brittle web scraping of VC portfolio pages in favor of robust, structured CSV bulk-ingestion (Crunchbase) combined with high-frequency, AI-driven delta updates via the Axios Pro Rata newsletter. This guarantees accurate metadata (Funding Rounds, Valuation Data, Lead Investors) while massively reducing scraping failures.
 
 ## Objectives
-- Build an Agentic Scraper capable of navigating VC portfolio websites (e.g., `a16z.com/portfolio`).
-- Extract company names and domains accurately from non-standardized portfolio grids.
-- Automatically link each company to the VC firm that backs it.
+- Build an ingestion engine to import rich company profiles and funding signals directly from Crunchbase exports.
+- Build an intelligent "Signal Watcher" to parse daily financial newsletters and identify new, relevant funding events.
+- Automatically link each company via a Many-to-Many junction to the VC firm that backs it based on parsed text.
 
 ## Functional Requirements
 
-### 1. The Portfolio Scraper (Differential Ingestion)
-- **Input**: The `VCFirm` database (list of ~200 top VCs and their websites).
-- **Execution**: Point Playwright to the VC's portfolio URL.
-- **HTML Hashing (State Detection)**: Before running the expensive AI extraction, compute a hash of the portfolio page's raw HTML.
-    - If `new_hash == old_hash`: Skip extraction (no new investments detected).
-    - If `new_hash != old_hash`: Trigger deep Agentic Extraction.
-- **Weekly Refresh**: The orchestrator runs once a week, but only spends tokens on VCs that have updated their portfolio sites.
-- **Extraction**: OpenAI (`gpt-4o-mini`) will take the HTML structure, locate the list of companies, and extract:
-  - `company_name`
-  - `website_url`
-  - `description`
+### 1. The Bulk Crunchbase Loader
+- **Input:** A provided CSV file (e.g., `scripts/data/crunchbase_companies_968.csv`).
+- **Execution:** A Python script (`scripts/import_companies_csv.py`) reads the file, parses columns, and handles database operations.
+- **De-duplication:** Upsert companies based on `Organization Name` and `Website`.
+- **Many-to-Many Linking:** 
+  - Collapse and de-duplicate the "Top 5 Investors" and "Lead Investors" columns.
+  - Look up matching entities in the `VCFirm` table.
+  - Populate the `CompanyVCFirmLink` junction table. Create "Stub" VCFirm records if an investor doesn't exist yet.
 
-### 2. Company Ingestion Logic
-- **De-duplication**: If multiple top VCs back the same startup, link the new VC firm to the existing company record.
-- **Data Model update (`models.py`)**:
-    - Update `VCFirm` with `portfolio_html_hash` and `last_scraped_at`.
-    - Implement a Many-to-Many junction table between `Company` and `VCFirm`.
+### 2. The Axios Pro Rata Daily Signal Ingestion
+- **Input:** The HTML view of the daily Axios Pro Rata newsletter (specifically the "Venture Capital Deals" section).
+- **Execution:** A scheduled background script (`scripts/ingest_axios_prorata.py`).
+- **Extraction:** Use `gpt-4o-mini` with strict structured output parsing logic to read the newsletter's conversational bullet points.
+- **Data Capture Elements:**
+  - Company Name & Target Website URL
+  - Size of the funding round (Extracted as raw number / string text)
+  - Funding Stage (e.g., Series A, Seed)
+  - Date (assumed from publication date)
+  - List of Investors mentioned
+- **Database Upsert:** Search for the company. If it exists, overwrite/update `total_funding_amount`, `last_funding_date`, `stage`. If missing, insert as a new company record, and create linking structures for the mentioned investors.
+
+## Data Model Changes
+Update the `Company` model in `models.py`:
+- `last_funding_date`: date/datetime
+- `total_funding_amount`: string or numeric float depending on scaling
+- `stage`: string
+- `industries`: string
+- `location`: string (Headquarters location)
+- `estimated_revenue_range`: string
+- `cb_rank`: integer
 
 ## Definition of Done
-- Database is populated with 10,000+ unique startups sourced exclusively from the "Top 200" VC firms in Epic 1.
-- A background or CLI script (`scripts/scrape_portfolios.py`) can be triggered against any `VCFirm.id`.
+- A bulk ingestion script (`scripts/import_companies_csv.py`) successfully populates thousands of high-growth companies with complete metadata and investor linkage.
+- An AI-powered newsletter scraper (`scripts/ingest_axios_prorata.py`) correctly identifies and inserts deals daily from Axios outputs.

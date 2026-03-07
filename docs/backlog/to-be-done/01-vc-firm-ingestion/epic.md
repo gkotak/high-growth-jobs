@@ -1,30 +1,43 @@
-# Epic 1: VC Firm Ingestion
+# Epic 1: VC Firm Ingestion (Signal-First)
 
 ## Overview
-The foundation of HighGrowthJobs is tracking the most successful venture capital firms. Epic 1 focuses on building the definitive, automated list of the top VC firms globally, which will later serve as our starting point for discovering high-growth startups.
+The foundation of HighGrowthJobs is tracking the most successful venture capital firms. Instead of relying on manual lists or brittle web scraping, Epic 1 focuses on building the definitive automated list of top VC firms by bulk-ingesting high-signal data directly from Crunchbase exports.
 
 ## Objectives
-- Build a comprehensive database of the Top 100 VC firms in the US and the Top 100 in Europe.
-- Incorporate a manual mechanism to add custom VC firms that aren't in the Top 200 (if manually curated later).
-- Establish the `VCFirm` database entity.
+- Build a comprehensive database of top VC firms globally using official Crunchbase CSV exports.
+- Establish a robust `VCFirm` database entity that can track macro-level investor signals (number of investments, exits, ranking).
+- Create a repeatable script to update investor metrics periodically via CSV drops.
 
 ## Functional Requirements
 
-### 1. The Global "Top 200" Ingestion
-- **Static JSON Source:** A curated JSON file (`scripts/data/initial_seed_top_vcs.json`) containing the highest-tier VC firms globally (based on AUM, exits, and prestige).
-- **Automation**: A Python script reads the JSON file and instantly populates the PostgreSQL database. This ensures 100% data fidelity (no scraping errors, correct URLs) for the downstream Epic 2 tasks.
+### 1. Crunchbase Bulk Ingestion
+- **Static CSV Source:** Use a provided CSV file (e.g., `scripts/data/crunchbase_vc_firms_830.csv`).
+- **Automation:** A Python script (`scripts/import_vcfirms_csv.py`) reads the CSV file and populates the PostgreSQL database.
+- **De-duplication & Upserting:** The script must match existing firms by `Organization/Person Name` or `Website`. Uses an "Upsert" mechanism to update their latest stats (like Number of Investments or CB Rank) without creating duplicates.
 
-### 2. Manual Custom Additions (V2/Later)
-- Provide a simple mechanism or clear process to allow the USER to manually add specific VC firms they are interested in, even if missing from the core Top 200 list.
+### 2. Supported Data Columns
+The ingestion script must parse and map the following columns from the Crunchbase format:
+- Organization/Person Name
+- Number of Portfolio Organizations
+- Investor Type
+- Number of Investments
+- Number of Exits
+- Location
+- Website
+- CB Rank (Investor)
 
 ## Data Model Changes
-Add `VCFirm` entity to `models.py`:
+Update `VCFirm` entity in `models.py` to include:
 - `id`: UUID
 - `name`: string
 - `website_url`: string
-- `region`: string (US, EU, Global)
-- `tier`: string (Tier 1, Tier 2, etc.)
+- `num_portfolio_orgs`: integer
+- `investor_type`: string
+- `num_investments`: integer
+- `num_exits`: integer
+- `location`: string
+- `cb_rank`: integer
 
 ## Definition of Done
-- Database contains ~200 top-tier VC firms mainly across US and Europe with accurate website URLs.
-- A script exists (`scripts/seed_vcs.py`) capable of running the ingestion cleanly.
+- Database contains hundreds of top-tier VC firms with accurate metrics and website URLs.
+- A script exists (`scripts/import_vcfirms_csv.py`) capable of running the ingestion cleanly via CSV.

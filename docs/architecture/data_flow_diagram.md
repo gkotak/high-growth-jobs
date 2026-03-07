@@ -1,85 +1,64 @@
 # HighGrowthJobs High-Level Data Flow
 
-This diagram illustrates the "Email-to-Action" loop via our **Hexagonal Architecture**. It highlights how flexible System Adapters feed into the rigid, Opinionated Core.
+This diagram illustrates the daily "Signal-to-Discovery" loop via our **Hexagonal Architecture**. It highlights how external ingestion adapters feed into the canonical HighGrowthJobs tracking core.
 
 ```mermaid
 graph TD
     %% Inputs (System Adapters - S)
     subgraph Inbound_Ports [Inbound Ports - System Adapters]
-        A1[Outlook Adapter: Remittances] -->|Trigger| B
-        A2[Outlook Adapter: Buyer Approvals] -->|Unstructured Text| B
-        A3[3PL Portal Adapter: BOLs] -->|PDF Artifacts| B
+        A1[Crunchbase CSV Loader] -->|Top 800 VCs| B
+        A2[Crunchbase Company CSV Loader] -->|1,000+ PortCos| B
+        A3[Axios Pro Rata Scraper] -->|Daily Funding Signals| B
     end
 
-    %% ERP Context
-    subgraph ERP_Adapter [ERP Adapter - S]
-        C[Business Central Adapter] <-->|Fetch: Invoices/POs| B
-    end
-
-    %% Processing (The Core & Playbooks)
-    subgraph Core_Engine [The Opinionated Core]
-        B{Canonical Engine}
-        B --> B1[Deterministic: Lumping Matcher]
-        B --> B2[Deterministic: 3-Way Match]
-        B --> B3[AI: Dispute Drafter]
+    %% Processing (The Opinionated Core)
+    subgraph Core_Engine [The HighGrowthJobs Core]
+        B{Ingestion Engine}
+        B -->|Upsert VCFirms| B1[(VCFirm Table)]
+        B -->|Upsert Companies| B2[(Company Table)]
+        B -->|M:N Link| B3[(CompanyVCFirmLink)]
         
-        %% Market Rules
-        subgraph Market_Playbooks [Market Playbooks - R]
-            B --> B4[Dollar General Playbook]
-            B --> B5[Walmart Playbook]
+        %% Extraction Layers
+        subgraph NLP_Parsers [AI Extraction Layer]
+            A3 --> B4[LLM Parser: gpt-4o-mini]
+            B4 -->|Structured Funding Rounds| B
         end
     end
 
-    %% Continuity (Orchestration)
-    subgraph Continuity [Continuity Engine]
-        O[HJGPlus Orchestrator] -->|Dual-Speed: Accelerator + Janitor| B
-        O -->|Monitor & Retry| E
+    %% Next Stages
+    subgraph Outbound_Discovery [MarketScraper]
+        B2 -->|Fetch Un-Scraped PortCos| M1[Job Board Scraper]
+        M1 -->|Playwright/Gemini Agent| M2[(Job Table)]
     end
 
     %% Human Review (The Opinionated Process - C)
-    subgraph Workbench [Audit Workbench UI]
-        B1 & B2 & B3 --> D[Investigation Workbench]
-        D -->|Human Action: Approve/Tag| E[Decision Engine]
+    subgraph Workbench [GrowthUI Web Portal]
+        WC[User] -->|Browser| UI[React Discovery Dashboard]
+        UI -->|API Search Queries| B1
+        UI -->|API Growth Filters| B2
+        UI -->|API Job Views| M2
     end
 
-    %% Actions & Feedback Loop
-    subgraph Outbound_Ports [Outbound Ports - Adapters]
-        E -->|Submit via Playbook| F[Email Adapter: Sent Dispute]
-        E -->|Submit via Playbook| G[API Adapter: Portal Submission]
-        E -->|Gather Evidence| K[Email Adapter: 3PL Inquiry]
-        
-        %% The Feedback Loop
-        F & G --> H{Market Response}
-        H -->|Approved Wait for R1| I[Status: RECONCILIATION PENDING]
-        H -->|Rejected| J[Status: REJECTED]
-        H -->|Request More Info| D
-        
-        %% 3PL Loop
-        K -->|New BOL/Proof| B
-    end
-
-    %% Final Settlement
-    subgraph Settlement [ERP Settlement]
-        I --> L[ERP Adapter: Apply Credit Memo]
-        J --> M[ERP Adapter: Write-off / Journal Entry]
+    %% Network Connection
+    subgraph Network_Intelligence [LinkedIn Connectivity]
+        WC -->|OAuth Grant| L1[LinkedIn Adapter]
+        L1 -->|Connections| L2[(UserConnection Table)]
+        L2 -->|Fuzzy Match| B2
     end
 
     %% Styling
     style B fill:#f96,stroke:#333,stroke-width:4px
-    style D fill:#bbf,stroke:#333,stroke-width:2px
-    style E fill:#bfb,stroke:#333,stroke-width:2px
-    style H fill:#f6f,stroke:#333,stroke-width:2px
+    style UI fill:#bbf,stroke:#333,stroke-width:2px
+    style B4 fill:#bfb,stroke:#333,stroke-width:2px
+    style M1 fill:#f6f,stroke:#333,stroke-width:2px
 ```
 
 ### Flow Description:
-1.  **Ingestion (S):** The process is triggered via the **Outlook Adapter** capturing a remittance ZIP or deduction email.
-2.  **Contextualization (S):** The core requests Invoice/PO data through the **Business Central Adapter**.
-3.  **Intelligence & Playbooks (Core + R):** 
-    -   The core extracts canonical data using AI.
-    -   The **Deterministic Math Engine** runs the Lumping Matcher.
-    -   The specific **Market Playbook** (e.g., DG) dictates what evidence is required and how the dispute should be drafted.
-4.  **Inquiry Loop:** If a BOL is missing, an adapter fetches it from the 3PL portal or emails the 3PL.
-5.  **Verification (The Rigid 'C'):** The **Audit Workbench** presents the unified view. The human is forced to use our UI to hit "Approve," rejecting complex offline routing.
-6.  **Resolution:** 
-    -   **Won:** Awaits the "R1" code, then updates the ledger via the ERP Adapter.
-    -   **Rejected:** Results in a final **Write-off** via the ERP Adapter.
+1.  **Seed Ingestion (S):** The platform initialization is achieved by the **Crunchbase CSV Loaders**, seamlessly seeding hundreds of top VCs and linking them to thousands of high-growth companies.
+2.  **Daily Signal Ingestion (S):** Fast-moving updates (like new Series A rounds) are ingested by the **Axios Pro Rata Scraper** via headless HTTP/Markdown paths.
+3.  **AI Extraction & Routing (Core):** 
+    -   The `gpt-4o-mini` adapter ensures unstructured newsletter text becomes normalized database structures.
+    -   The core performs aggressive upserts (merging existing DB entries, and handling missing VCFirms via the `is_stub=True` logic).
+4.  **Job Scraping Loop (MarketScraper):** Once companies are canonicalized, the scraping service navigates their career pages to harvest active `Job` listings.
+5.  **GrowthUI Discovery:** Users enter the system through the React frontend, querying the highly structured data by specific growth constraints ("Show me remote PM roles at Series A companies funded by Founders Fund").
+6.  **Network Intelligence (Epic 5):** The user seamlessly connects their LinkedIn to find 1st-degree referrals inside the curated database.

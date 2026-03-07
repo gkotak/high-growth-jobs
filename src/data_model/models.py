@@ -24,9 +24,19 @@ class VCFirmBase(SQLModel):
     region: Optional[str] = None # US, EU, Global
     tier: Optional[str] = None # Tier 1, Tier 2, etc.
     
+    # Crunchbase specific
+    num_portfolio_orgs: Optional[int] = None
+    investor_type: Optional[str] = None
+    num_investments: Optional[int] = None
+    num_exits: Optional[int] = None
+    location: Optional[str] = None
+    cb_rank: Optional[int] = None
+    
     # Differential Ingestion Tracking
     portfolio_html_hash: Optional[str] = None
     last_scraped_at: Optional[datetime] = None
+    
+    is_stub: bool = False
 
 class VCFirm(VCFirmBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -44,8 +54,16 @@ class CompanyBase(SQLModel):
     twitter_url: Optional[str] = None
     
     # Growth Signals
-    total_funding_usd: Optional[float] = None
+    total_funding_amount: Optional[str] = None
+    last_funding_date: Optional[datetime] = None
     last_funding_round: Optional[str] = None
+    
+    # Crunchbase specific
+    stage: Optional[str] = None
+    industries: Optional[str] = None
+    location: Optional[str] = None
+    estimated_revenue_range: Optional[str] = None
+    cb_rank: Optional[int] = None
 
 class Company(CompanyBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)

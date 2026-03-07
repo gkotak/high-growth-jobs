@@ -45,8 +45,8 @@ The architecture of HighGrowthJobs follows the **Hexagonal Core** pattern.
 *   **Phase:** Initial Scaffolding.
 *   **Primary Achievement:** Established the de-branded Agent Skill set and the "Universal Blueprint" directory structure.
 *   **Roadmap:**
-    1.  **VC Firm Ingestion (Epic 1):** Curate and track the global Top 200 VC firms (and USER contact connections) as the master discovery seed.
-    2.  **Portfolio Company Discovery (Epic 2):** Scrape VC portfolio pages to build a massive directory of high-growth startups linked to those VCs.
+    1.  **VC Firm Ingestion (Epic 1):** Bulk ingest Top tier Crunchbase VC firms via CSV to act as the primary signaling database.
+    2.  **Portfolio Company Discovery (Epic 2):** Bulk ingest Crunchbase Company CSVs, and implement an AI-powered daily pipeline to scrape Axios Pro Rata funding signals.
     3.  **Job Scraping (Epic 3):** Implement the `MarketScraper` to ingest and normalize job posts from our discovered companies.
     4.  **Discovery UI (Epic 4):** Build the searchable "GrowthUI" portal with advanced filtering.
     5.  **Network Intelligence (Epic 5):** LinkedIn integration to discover internal referrals.
