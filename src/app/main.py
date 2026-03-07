@@ -2,9 +2,12 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 from typing import List
+from uuid import UUID
+from sqlalchemy.orm import selectinload
+from sqlmodel import SQLModel
 
 from src.app.core.database import get_session
-from src.data_model.models import Company
+from src.data_model.models import Company, Job, JobBase, CompanyBase
 
 app = FastAPI(
     title="HighGrowthJobs API",
@@ -21,6 +24,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class VCFirmResponse(SQLModel):
+    name: str
+
+class CompanyResponse(CompanyBase):
+    id: UUID
+    vc_firms: List[VCFirmResponse] = []
+
+class JobResponse(JobBase):
+    id: UUID
+    company: CompanyResponse
+
 @app.get("/")
 async def root():
     return {
@@ -33,7 +47,15 @@ async def root():
 async def health_check():
     return {"status": "healthy"}
 
-@app.get("/companies", response_model=List[Company])
+@app.get("/api/companies", response_model=List[Company])
 async def get_companies(session: Session = Depends(get_session)):
     companies = session.exec(select(Company)).all()
     return companies
+
+@app.get("/api/jobs", response_model=List[JobResponse])
+async def get_jobs(session: Session = Depends(get_session)):
+    stmt = select(Job).options(
+        selectinload(Job.company).selectinload(Company.vc_firms)
+    )
+    jobs = session.exec(stmt).all()
+    return jobs
