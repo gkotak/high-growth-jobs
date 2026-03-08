@@ -1,0 +1,16 @@
+# Exclude local dev and scrapers from Vercel bundle
+scripts/data/*.csv
+scripts/data/*.zip
+.venv/
+__pycache__/
+*.pyc
+.git/
+.vscode/
+
+# We only need the API and common src
+# But we can ignore the heavy scraper scripts 
+# if they aren't called by the API
+scripts/import_companies_csv.py
+scripts/import_vcfirms_csv.py
+scripts/cleanup_duplicates.py
+scripts/seed_dummy_jobs.py
