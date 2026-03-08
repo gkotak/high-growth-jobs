@@ -12,7 +12,8 @@
 *   **[HighGrowthJobs API Design Submodule](./submodules/api.md):** The RESTful API contract between the React Discovery UI and the FastAPI Core (Updated to reflect the UI prototype's data structures, including computed statuses and line items).
 *   **[HighGrowthJobs Frontend Architecture Submodule](./submodules/frontend.md):** The technical design of the GrowthUI Workbench UI (React/TS/Tailwind).
 *   **[HighGrowthJobs Identity & IAM Submodule](./submodules/identity.md):** The multi-tenant RBAC, authentication, and user-tenant mapping logic.
-*   **[HighGrowthJobs Operational Observability](./submodules/operations.md):** Background job tracking, system health, and production monitoring.
+*   **[Deployment & Security](./deployment_and_security.md):** The "Dual-Speed" infrastructure model (Vercel + Railway) and the Backend Gateway security pattern.
+*   **[Operational Observability](./submodules/operations.md):** Background job tracking, system health, and production monitoring.
 
 ---
 
@@ -73,9 +74,9 @@ HighGrowthJobs maintains strict separation between **Local Development** and **P
 - **Docker Performance Law:** To handle ARM64 (host) vs. Linux (container) native binding conflicts, dependencies are containerized.
 - **CI (GitHub Actions):** 
   - Run `ruff` (linting) and `mypy` (type checking) on every push.
-- **CD Deployment:** 
-  - Docker Compose orchestration on target cloud instances.
-  - **Reverse Proxy:** **Caddy** (containerized) handles SSL/TLS (Automatic Let's Encrypt).
+- **CD Deployment (Dual-Speed):** 
+  - **Frontend & API:** **Vercel** (Monorepo). Handles user traffic and light REST requests.
+  - **Background Workers:** **Railway** (Dockerized). Handles heavy scraping (Playwright) and AI agents.
 
 ## 6. Key Architectural Patterns
 
@@ -91,8 +92,9 @@ HighGrowthJobs maintains strict separation between **Local Development** and **P
 ## 7. Security Architecture & Guardrails
 - **Inbound Data Guardrails (The Sandbox):**
     - **LLM Scoping:** AI agents have **Zero** direct access to write raw executing code. They produce strict Pydantic Output payloads which must be explicitly committed by the Python engine.
-- **API Security:**
-    - OAuth / JWT for standard endpoint access.
+- **API Security (The Backend Gateway):**
+    - The system utilizes a **Bouncer Pattern**: The browser NEVER talks to the database. All requests are proxied via a secured FastAPI gateway on Vercel.
+    - **Secret Isolation**: Mandatory `VITE_` prefixing for client-side variables; all others remain server-side.
 
 ## 8. Disaster Recovery & Reliability
 - **Database Backups:**
