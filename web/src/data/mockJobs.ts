@@ -105,6 +105,47 @@ function formatFunding(n: number): string {
 
 export { formatFunding };
 
+export const VC_RANKS: Record<string, number> = {
+  "Sequoia Capital": 1,
+  "a16z": 2,
+  "Benchmark": 3,
+  "Founders Fund": 4,
+  "Thrive Capital": 5,
+  "Index Ventures": 6,
+  "Accel": 7,
+  "General Catalyst": 8,
+  "Kleiner Perkins": 9,
+  "Tiger Global": 10,
+  "Goldman Sachs": 11,
+  "SoftBank": 12,
+  "Google": 13,
+  "Y Combinator": 14,
+  "Spark Capital": 15,
+  "Coatue Management": 16,
+  "Greylock": 17,
+  "Social Capital": 18,
+  "Lightspeed Venture Partners": 19,
+  "Menlo Ventures": 20,
+};
+
+// Fallback rank for investors not in our top-tier ranking list
+// This ensures unknown investors always appear at the end of the list
+const UNKNOWN_RANK = 999999;
+
+export const sortInvestors = (investors: string[]) => {
+  return [...(investors || [])].sort((a, b) => {
+    const rankA = VC_RANKS[a] || UNKNOWN_RANK;
+    const rankB = VC_RANKS[b] || UNKNOWN_RANK;
+    return rankA - rankB;
+  });
+};
+
+export const formatFounded = (founded?: string | number) => {
+  // Handle empty, zero, or "0" cases as requested by the USER
+  if (!founded || founded === 0 || founded === "0") return "Unknown";
+  return String(founded);
+};
+
 export const mockJobs: Job[] = [
   { id: "j1", title: "Senior Frontend Engineer", company: companies[0], location: "New York, NY", remote: "Hybrid", salaryMin: 180000, salaryMax: 240000, postedAt: "2026-03-04", roleType: "Engineering", experienceLevel: "Senior", skills: ["React", "TypeScript", "GraphQL"], signals: [{ type: "tier1_vc", label: "Tier 1 VC" }, { type: "series", label: "Series D" }], description: "We're looking for a Senior Frontend Engineer to join Ramp's core product team. You'll work on building beautiful, performant interfaces that help finance teams manage spend more effectively.\n\n**What you'll do**\n- Build and maintain complex React applications with TypeScript\n- Collaborate closely with product and design teams to ship delightful user experiences\n- Architect scalable frontend systems and establish best practices\n- Mentor junior engineers and contribute to engineering culture\n\n**What we're looking for**\n- 5+ years of experience building production web applications\n- Deep expertise in React, TypeScript, and modern frontend tooling\n- Experience with GraphQL and state management patterns\n- Strong product sense and attention to detail\n- Track record of shipping high-quality features end-to-end" },
   { id: "j2", title: "Staff Backend Engineer", company: companies[1], location: "San Francisco, CA", remote: "Remote", salaryMin: 200000, salaryMax: 280000, postedAt: "2026-03-03", roleType: "Engineering", experienceLevel: "Lead", skills: ["Go", "Kubernetes", "AWS"], signals: [{ type: "tier1_vc", label: "Tier 1 VC" }, { type: "remote", label: "Remote" }], description: "Vercel is seeking a Staff Backend Engineer to help scale our infrastructure to support millions of deployments daily.\n\n**What you'll do**\n- Design and implement highly available distributed systems\n- Lead technical architecture decisions for core platform services\n- Optimize performance and reliability of our build and deployment pipeline\n- Drive engineering excellence through code reviews and technical mentorship\n\n**What we're looking for**\n- 8+ years of backend engineering experience\n- Expert-level Go or similar systems language\n- Deep experience with Kubernetes, container orchestration, and cloud infrastructure\n- Proven track record of designing systems at scale" },

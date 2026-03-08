@@ -3,7 +3,7 @@ import { ArrowLeft, MapPin, Clock, DollarSign, Briefcase, ExternalLink, Globe, U
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import SignalBadge from "@/components/SignalBadge";
-import { formatFunding } from "@/data/mockJobs";
+import { formatFunding, sortInvestors, formatFounded } from "@/data/mockJobs";
 import { useJobs } from "@/hooks/useJobs";
 import { Button } from "@/components/ui/button";
 import GlassdoorRating from "@/components/GlassdoorRating";
@@ -265,13 +265,15 @@ const JobDetail = () => {
                   <Calendar className="h-4 w-4" />
                   <span className="text-xs uppercase font-medium tracking-wider text-muted-foreground">Founded</span>
                 </div>
-                <p className="mt-1 text-sm font-semibold text-foreground">{company.founded}</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {formatFounded(company.founded)}
+                </p>
               </div>
             </div>
 
             <div className="mt-6">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Key Investors</p>
-              <p className="mt-2 text-sm text-foreground leading-relaxed">{company.investors.join(" · ")}</p>
+              <p className="mt-2 text-sm text-foreground leading-relaxed">{sortInvestors(company.investors).join(" · ")}</p>
             </div>
 
             <div className="mt-6 flex items-center justify-between gap-4 border-t border-border pt-6">

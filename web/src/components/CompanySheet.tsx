@@ -12,7 +12,7 @@ const TwitterIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 import type { Company } from "@/data/mockJobs";
-import { formatFunding } from "@/data/mockJobs";
+import { formatFunding, sortInvestors, formatFounded } from "@/data/mockJobs";
 import GlassdoorRating from "@/components/GlassdoorRating";
 
 interface CompanySheetProps {
@@ -106,7 +106,7 @@ const CompanySheet = ({ company, onClose }: CompanySheetProps) => {
                 <StatCard
                   icon={<Calendar className="h-4 w-4" />}
                   label="Founded"
-                  value={String(company.founded)}
+                  value={formatFounded(company.founded)}
                 />
               </div>
 
@@ -116,7 +116,7 @@ const CompanySheet = ({ company, onClose }: CompanySheetProps) => {
                   Key Investors
                 </h3>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {company.investors.map((investor) => (
+                  {sortInvestors(company.investors).map((investor) => (
                     <span
                       key={investor}
                       className="signal-badge-tier1"
