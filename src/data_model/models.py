@@ -47,7 +47,8 @@ class VCFirm(VCFirmBase, table=True):
 
 class CompanyBase(SQLModel):
     name: str = Field(index=True)
-    website_url: str
+    website_url: Optional[str] = Field(unique=True, index=True)
+    career_url: Optional[str] = None
     description: Optional[str] = None
     logo_url: Optional[str] = None
     linkedin_url: Optional[str] = None

@@ -50,9 +50,9 @@ def parse_date(val: str):
     except Exception:
         return None
 
-def clean_url(url: str) -> str:
-    if not url or url == '—':
-        return "#"
+def clean_url(url: str) -> Optional[str]:
+    if not url or url == '—' or url == '#':
+        return None
     url = url.strip()
     if not url.startswith('http'):
         url = f"https://{url}"
@@ -82,8 +82,8 @@ def import_all_csvs(data_dir: str):
         
         # Load companies for de-duplication
         db_comps = session.exec(select(Company).where(Company.tenant_id == tenant_id)).all()
-        # Map by name and website for de-duplication
-        comp_map = {(c.name.lower(), c.website_url.replace("https://", "").replace("http://", "").strip("/").lower()): c for c in db_comps}
+        # Map by website for de-duplication (unique constraint)
+        comp_map = {c.website_url.replace("https://", "").replace("http://", "").strip("/").lower(): c for c in db_comps if c.website_url}
         
         db_links = session.exec(select(CompanyVCFirmLink)).all()
         link_set = {(l.company_id, l.vc_firm_id) for l in db_links}
@@ -105,7 +105,7 @@ def import_all_csvs(data_dir: str):
                         continue
                         
                     website_url = clean_url(row.get('Website', ''))
-                    website_key = website_url.replace("https://", "").replace("http://", "").strip("/").lower()
+                    website_key = website_url.replace("https://", "").replace("http://", "").strip("/").lower() if website_url else None
                     
                     # Metadata from CSV
                     t_funding = row.get('Total Funding Amount', '').strip() or None
@@ -123,10 +123,11 @@ def import_all_csvs(data_dir: str):
                     twitter = row.get('Twitter URL', '').strip() or None
                     linkedin = row.get('LinkedIn URL', '').strip() or None
 
-                    comp_record = comp_map.get((name.lower(), website_key))
+                    comp_record = comp_map.get(website_key) if website_key else None
                     
                     if comp_record:
                         # UPDATING existing record (in-session object)
+                        comp_record.name = name or comp_record.name
                         comp_record.total_funding_amount = t_funding or comp_record.total_funding_amount
                         comp_record.last_funding_amount = l_funding or comp_record.last_funding_amount
                         comp_record.last_funding_date = l_date or comp_record.last_funding_date
@@ -164,7 +165,8 @@ def import_all_csvs(data_dir: str):
                             linkedin_url=linkedin
                         )
                         new_companies_objs.append(company)
-                        comp_map[(name.lower(), website_key)] = company # Track to avoid re-adding if same file has dupes
+                        if website_key:
+                            comp_map[website_key] = company # Track to avoid re-adding if same file has dupes
                     
                     # Investors
                     top = [v.strip() for v in row.get('Top 5 Investors', '').split(',') if v.strip() and v != '—']
