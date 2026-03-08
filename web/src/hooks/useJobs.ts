@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Job, Company, Signal } from '../data/mockJobs';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export function useJobs() {
     return useQuery({
