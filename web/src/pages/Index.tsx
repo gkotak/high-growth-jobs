@@ -4,6 +4,7 @@ import CompanySheet from "@/components/CompanySheet";
 import { useJobs } from "@/hooks/useJobs";
 import HeroSection from "@/widgets/landing/HeroSection";
 import FilterSection from "@/widgets/landing/FilterSection";
+import ControlBar from "@/widgets/landing/ControlBar";
 import JobListSection from "@/widgets/landing/JobListSection";
 import { FilterState } from "@/widgets/landing/types";
 
@@ -104,18 +105,24 @@ const Index = () => {
       <HeroSection search={search} onSearchChange={setSearch} />
 
       {/* Main Content */}
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           <FilterSection
             filters={filters}
             onFilterChange={setFilters}
             showFilters={showFilters}
-            onToggleFilters={() => setShowFilters(!showFilters)}
-            jobCount={filteredJobs.length}
-            activeFilterCount={activeFilterCount}
           />
 
           <main className="min-w-0 flex-1">
+            <ControlBar
+              filters={filters}
+              onFilterChange={setFilters}
+              showFilters={showFilters}
+              onToggleFilters={() => setShowFilters(!showFilters)}
+              jobCount={filteredJobs.length}
+              activeFilterCount={activeFilterCount}
+            />
+
             <JobListSection
               jobs={filteredJobs}
               isLoading={isLoading}

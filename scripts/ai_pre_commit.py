@@ -42,7 +42,7 @@ prompt = AI_PRE_COMMIT_REVIEW_PROMPT.format(diff_text=diff_text)
 
 try:
     response = client.chat.completions.create(
-        model='gpt-4o-mini',
+        model='gpt-4o',
         messages=[{"role": "user", "content": prompt}]
     )
     feedback = response.choices[0].message.content.strip()
