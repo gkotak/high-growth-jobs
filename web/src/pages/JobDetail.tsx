@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Clock, DollarSign, Briefcase, ExternalLink, Globe } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, DollarSign, Briefcase, ExternalLink, Globe, Users, Calendar, Linkedin } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import SignalBadge from "@/components/SignalBadge";
@@ -34,6 +34,17 @@ function formatDate(dateStr: string): string {
     year: "numeric",
   });
 }
+
+const TwitterIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={className}
+    fill="currentColor"
+    stroke="none"
+  >
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 const JobDetail = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -224,39 +235,79 @@ const JobDetail = () => {
             <h2 className="text-base font-semibold text-foreground">About {company.name}</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{company.description}</p>
 
-            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Founded</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">{company.founded}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Employees</p>
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-lg border border-border bg-muted/30 p-3">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Users className="h-4 w-4" />
+                  <span className="text-xs uppercase font-medium tracking-wider text-muted-foreground">Employees</span>
+                </div>
                 <p className="mt-1 text-sm font-semibold text-foreground">{company.employeeCount}</p>
               </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Funding</p>
+
+              <div className="rounded-lg border border-border bg-muted/30 p-3">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <DollarSign className="h-4 w-4" />
+                  <span className="text-xs uppercase font-medium tracking-wider text-muted-foreground">Total Funding</span>
+                </div>
                 <p className="mt-1 text-sm font-semibold text-foreground">{formatFunding(company.totalFunding)}</p>
               </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Stage</p>
-                <p className="mt-1 text-sm font-semibold text-foreground">{company.fundingStage}</p>
+
+              <div className="rounded-lg border border-border bg-muted/30 p-3">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <DollarSign className="h-4 w-4" />
+                  <span className="text-xs uppercase font-medium tracking-wider text-muted-foreground">Most Recent</span>
+                </div>
+                <p className="mt-1 text-sm font-semibold text-foreground">{company.lastFundingAmount || "Unknown"}</p>
+              </div>
+
+              <div className="rounded-lg border border-border bg-muted/30 p-3">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span className="text-xs uppercase font-medium tracking-wider text-muted-foreground">Founded</span>
+                </div>
+                <p className="mt-1 text-sm font-semibold text-foreground">{company.founded}</p>
               </div>
             </div>
 
-            <div className="mt-5">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Investors</p>
-              <p className="mt-1 text-sm text-foreground">{company.investors.join(" · ")}</p>
+            <div className="mt-6">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Key Investors</p>
+              <p className="mt-2 text-sm text-foreground leading-relaxed">{company.investors.join(" · ")}</p>
             </div>
 
-            <div className="mt-5 flex gap-3">
-              <Button variant="outline" size="sm" onClick={() => window.open(company.careerUrl, "_blank")}>
-                Careers page
-                <ExternalLink className="h-3.5 w-3.5" />
+            <div className="mt-6 flex items-center justify-between gap-4 border-t border-border pt-6">
+              <Button
+                variant="outline"
+                className="flex-1 sm:flex-none h-10 px-6 font-semibold"
+                onClick={() => window.open(company.careerUrl, "_blank")}
+              >
+                View all careers
+                <ExternalLink className="ml-2 h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={() => window.open(company.linkedinUrl, "_blank")}>
-                LinkedIn
-                <ExternalLink className="h-3.5 w-3.5" />
-              </Button>
+
+              <div className="flex items-center gap-2">
+                {company.linkedinUrl && (
+                  <a
+                    href={company.linkedinUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    title="LinkedIn"
+                  >
+                    <Linkedin className="h-5 w-5" />
+                  </a>
+                )}
+                {company.twitterUrl && (
+                  <a
+                    href={company.twitterUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    title="Twitter / X"
+                  >
+                    <TwitterIcon className="h-5 w-5" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
 

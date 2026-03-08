@@ -6,7 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 
 from sqlmodel import SQLModel
-from src.data_model.models import Tenant, Company, Job
+from src.data_model.models import Tenant, Company, Job, VCFirm, CompanyVCFirmLink
 
 import os
 from dotenv import load_dotenv

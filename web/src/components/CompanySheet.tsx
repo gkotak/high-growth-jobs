@@ -1,5 +1,16 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ExternalLink, Linkedin, Building2, Calendar, Users, DollarSign, Globe } from "lucide-react";
+import { X, ExternalLink, Linkedin, Calendar, Users, DollarSign, Globe } from "lucide-react";
+
+const TwitterIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={className}
+    fill="currentColor"
+    stroke="none"
+  >
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 import type { Company } from "@/data/mockJobs";
 import { formatFunding } from "@/data/mockJobs";
 import GlassdoorRating from "@/components/GlassdoorRating";
@@ -78,19 +89,19 @@ const CompanySheet = ({ company, onClose }: CompanySheetProps) => {
               {/* Stats Grid */}
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <StatCard
+                  icon={<Users className="h-4 w-4" />}
+                  label="Employees"
+                  value={company.employeeCount}
+                />
+                <StatCard
                   icon={<DollarSign className="h-4 w-4" />}
                   label="Total Funding"
                   value={formatFunding(company.totalFunding)}
                 />
                 <StatCard
-                  icon={<Building2 className="h-4 w-4" />}
-                  label="Stage"
-                  value={company.fundingStage}
-                />
-                <StatCard
-                  icon={<Users className="h-4 w-4" />}
-                  label="Employees"
-                  value={company.employeeCount}
+                  icon={<DollarSign className="h-4 w-4" />}
+                  label="Most Recent"
+                  value={company.lastFundingAmount || "Unknown"}
                 />
                 <StatCard
                   icon={<Calendar className="h-4 w-4" />}
@@ -117,7 +128,7 @@ const CompanySheet = ({ company, onClose }: CompanySheetProps) => {
               </div>
 
               {/* Links */}
-              <div className="mt-6 flex gap-3">
+              <div className="mt-6 flex items-center gap-3">
                 <a
                   href={company.careerUrl}
                   target="_blank"
@@ -127,15 +138,31 @@ const CompanySheet = ({ company, onClose }: CompanySheetProps) => {
                   <ExternalLink className="h-4 w-4" />
                   View Careers
                 </a>
-                <a
-                  href={company.linkedinUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                >
-                  <Linkedin className="h-4 w-4" />
-                  LinkedIn
-                </a>
+
+                <div className="flex items-center gap-2">
+                  {company.linkedinUrl && (
+                    <a
+                      href={company.linkedinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      title="LinkedIn"
+                    >
+                      <Linkedin className="h-5 w-5" />
+                    </a>
+                  )}
+                  {company.twitterUrl && (
+                    <a
+                      href={company.twitterUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      title="Twitter / X"
+                    >
+                      <TwitterIcon className="h-5 w-5" />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>

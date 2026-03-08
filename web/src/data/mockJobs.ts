@@ -25,12 +25,14 @@ export type Company = {
   logo: string;
   description: string;
   totalFunding: number;
+  lastFundingAmount?: string;
   fundingStage: string;
   investors: string[];
   employeeCount: string;
-  founded: number;
+  founded: string | number;
   careerUrl: string;
   linkedinUrl: string;
+  twitterUrl?: string;
   websiteUrl: string;
   glassdoorRating: number;
   industry: string;
@@ -41,49 +43,57 @@ const companies: Company[] = [
     id: "c1", name: "Ramp", logo: "https://logo.clearbit.com/ramp.com",
     description: "Ramp is the ultimate platform for modern finance teams. It combines corporate cards, expense management, bill payments, and accounting automation into one seamless system.",
     totalFunding: 1600000000, fundingStage: "Series D", investors: ["Founders Fund", "Sequoia Capital", "Thrive Capital", "D1 Capital"],
-    employeeCount: "800-1000", founded: 2019, careerUrl: "https://ramp.com/careers", linkedinUrl: "https://linkedin.com/company/ramp", websiteUrl: "https://ramp.com", glassdoorRating: 4.4, industry: "Fintech"
+    employeeCount: "800-1000", founded: 2019, careerUrl: "https://ramp.com/careers", linkedinUrl: "https://linkedin.com/company/ramp", websiteUrl: "https://ramp.com", glassdoorRating: 4.4, industry: "Fintech",
+    lastFundingAmount: "$150M", twitterUrl: "https://twitter.com/tryramp"
   },
   {
     id: "c2", name: "Vercel", logo: "https://logo.clearbit.com/vercel.com",
     description: "Vercel is the platform for frontend developers, providing the speed and reliability innovators need to create at the moment of inspiration.",
     totalFunding: 563000000, fundingStage: "Series E", investors: ["Accel", "GV", "Bedrock Capital", "Tiger Global"],
-    employeeCount: "400-600", founded: 2015, careerUrl: "https://vercel.com/careers", linkedinUrl: "https://linkedin.com/company/vercel", websiteUrl: "https://vercel.com", glassdoorRating: 4.1, industry: "Developer Tools"
+    employeeCount: "400-600", founded: 2015, careerUrl: "https://vercel.com/careers", linkedinUrl: "https://linkedin.com/company/vercel", websiteUrl: "https://vercel.com", glassdoorRating: 4.1, industry: "Developer Tools",
+    lastFundingAmount: "$250M"
   },
   {
     id: "c3", name: "Linear", logo: "https://logo.clearbit.com/linear.app",
     description: "Linear is the issue tracking tool built for modern software teams. Streamline issues, sprints, and product roadmaps.",
     totalFunding: 52000000, fundingStage: "Series B", investors: ["Sequoia Capital", "01 Advisors", "SV Angel"],
-    employeeCount: "50-100", founded: 2019, careerUrl: "https://linear.app/careers", linkedinUrl: "https://linkedin.com/company/linear-app", websiteUrl: "https://linear.app", glassdoorRating: 4.6, industry: "Developer Tools"
+    employeeCount: "50-100", founded: 2019, careerUrl: "https://linear.app/careers", linkedinUrl: "https://linkedin.com/company/linear-app", websiteUrl: "https://linear.app", glassdoorRating: 4.6, industry: "Developer Tools",
+    lastFundingAmount: "$35M"
   },
   {
     id: "c4", name: "Notion", logo: "https://logo.clearbit.com/notion.so",
     description: "Notion is the connected workspace where better, faster work happens. It blends everyday work apps into one — notes, docs, wikis, and project management.",
     totalFunding: 343000000, fundingStage: "Series C", investors: ["Sequoia Capital", "Index Ventures", "Coatue Management"],
-    employeeCount: "500-800", founded: 2013, careerUrl: "https://notion.so/careers", linkedinUrl: "https://linkedin.com/company/notionhq", websiteUrl: "https://notion.so", glassdoorRating: 4.3, industry: "Productivity"
+    employeeCount: "500-800", founded: 2013, careerUrl: "https://notion.so/careers", linkedinUrl: "https://linkedin.com/company/notionhq", websiteUrl: "https://notion.so", glassdoorRating: 4.3, industry: "Productivity",
+    lastFundingAmount: "$275M"
   },
   {
     id: "c5", name: "Anthropic", logo: "https://logo.clearbit.com/anthropic.com",
     description: "Anthropic is an AI safety company building reliable, interpretable, and steerable AI systems. Creator of Claude.",
     totalFunding: 7300000000, fundingStage: "Series D", investors: ["Google", "Spark Capital", "Salesforce Ventures", "Menlo Ventures"],
-    employeeCount: "500-900", founded: 2021, careerUrl: "https://anthropic.com/careers", linkedinUrl: "https://linkedin.com/company/anthropic-ai", websiteUrl: "https://anthropic.com", glassdoorRating: 4.5, industry: "AI/ML"
+    employeeCount: "500-900", founded: 2021, careerUrl: "https://anthropic.com/careers", linkedinUrl: "https://linkedin.com/company/anthropic-ai", twitterUrl: "https://twitter.com/AnthropicAI", websiteUrl: "https://anthropic.com", glassdoorRating: 4.5, industry: "AI/ML",
+    lastFundingAmount: "$450M"
   },
   {
     id: "c6", name: "Cursor", logo: "https://logo.clearbit.com/cursor.com",
     description: "Cursor is the AI-first code editor. Build software faster with an editor designed around AI from the ground up.",
     totalFunding: 400000000, fundingStage: "Series B", investors: ["a16z", "Thrive Capital", "Benchmark"],
-    employeeCount: "50-100", founded: 2022, careerUrl: "https://cursor.com/careers", linkedinUrl: "https://linkedin.com/company/cursor-ai", websiteUrl: "https://cursor.com", glassdoorRating: 4.7, industry: "Developer Tools"
+    employeeCount: "50-100", founded: 2022, careerUrl: "https://cursor.com/careers", linkedinUrl: "https://linkedin.com/company/cursor-ai", websiteUrl: "https://cursor.com", glassdoorRating: 4.7, industry: "Developer Tools",
+    lastFundingAmount: "$60M"
   },
   {
     id: "c7", name: "Stripe", logo: "https://logo.clearbit.com/stripe.com",
     description: "Stripe is a financial infrastructure platform for businesses. Millions of companies use Stripe to accept payments, grow revenue, and accelerate new business.",
     totalFunding: 8700000000, fundingStage: "Series I", investors: ["Sequoia Capital", "a16z", "General Catalyst", "Thrive Capital"],
-    employeeCount: "7000+", founded: 2010, careerUrl: "https://stripe.com/jobs", linkedinUrl: "https://linkedin.com/company/stripe", websiteUrl: "https://stripe.com", glassdoorRating: 4.2, industry: "Fintech"
+    employeeCount: "7000+", founded: 2010, careerUrl: "https://stripe.com/jobs", linkedinUrl: "https://linkedin.com/company/stripe", websiteUrl: "https://stripe.com", glassdoorRating: 4.2, industry: "Fintech",
+    lastFundingAmount: "$6.5B"
   },
   {
     id: "c8", name: "Figma", logo: "https://logo.clearbit.com/figma.com",
     description: "Figma is a collaborative interface design tool that connects everyone in the design process so teams can deliver better products, faster.",
     totalFunding: 332000000, fundingStage: "Series E", investors: ["a16z", "Greylock", "Kleiner Perkins", "Index Ventures"],
-    employeeCount: "1000-1500", founded: 2012, careerUrl: "https://figma.com/careers", linkedinUrl: "https://linkedin.com/company/figma", websiteUrl: "https://figma.com", glassdoorRating: 4.5, industry: "Design"
+    employeeCount: "1000-1500", founded: 2012, careerUrl: "https://figma.com/careers", linkedinUrl: "https://linkedin.com/company/figma", websiteUrl: "https://figma.com", glassdoorRating: 4.5, industry: "Design",
+    lastFundingAmount: "$200M"
   },
 ];
 

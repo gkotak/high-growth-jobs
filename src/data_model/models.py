@@ -55,8 +55,11 @@ class CompanyBase(SQLModel):
     
     # Growth Signals
     total_funding_amount: Optional[str] = None
+    last_funding_amount: Optional[str] = None
     last_funding_date: Optional[datetime] = None
     last_funding_round: Optional[str] = None
+    employee_count: Optional[str] = None
+    founded_date: Optional[str] = None
     
     # Crunchbase specific
     stage: Optional[str] = None
