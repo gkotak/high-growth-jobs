@@ -11,9 +11,9 @@ RUN pip install uv
 # Copy the lockfile and project file
 COPY pyproject.toml uv.lock ./
 
-# Install ONLY the scraper-group dependencies (we moved playwright here earlier)
-# This keeps the image smaller and focused
-RUN uv sync --frozen --with scrapers
+# Install dependencies from the scraper extra
+# This matches the [project.optional-dependencies] section in pyproject.toml
+RUN uv sync --frozen --extra scrapers
 
 # Copy the rest of the application
 COPY . .
