@@ -14,8 +14,9 @@ COPY pyproject.toml uv.lock ./
 # Add the virtualenv's bin directory to the PATH so we can run scripts easily
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Install all project dependencies (now including scrapers)
-RUN uv sync --frozen
+# Force uv to use the system Python 3.12 from the Playwright image
+# (without this, uv downloads Python 3.14 which lacks pre-built wheels for greenlet)
+RUN uv sync --frozen --python-preference only-system
 
 # Copy the rest of the application
 COPY . .
