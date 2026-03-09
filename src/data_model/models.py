@@ -106,5 +106,21 @@ class Job(JobBase, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     status: str = Field(default="active") # active, closed
+    needs_deep_scrape: bool = Field(default=True, index=True)
     
     company: Company = Relationship(back_populates="jobs")
+    details: Optional["JobDetails"] = Relationship(back_populates="job")
+
+class JobDetailsBase(SQLModel):
+    description_html: Optional[str] = None
+    description_text: Optional[str] = None
+    extracted_requirements: Optional[str] = None
+    extracted_benefits: Optional[str] = None
+
+class JobDetails(JobDetailsBase, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    job_id: UUID = Field(foreign_key="job.id", unique=True, index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    job: Job = Relationship(back_populates="details")

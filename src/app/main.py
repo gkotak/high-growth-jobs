@@ -1,6 +1,10 @@
 import logging
+import os
+import time
+
 from typing import List, Optional
 from uuid import UUID
+
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select, SQLModel, func, and_
@@ -8,10 +12,17 @@ from sqlalchemy.orm import selectinload
 
 from src.app.core.database import get_session
 from src.data_model.models import Company, Job, JobBase, CompanyBase
+from src.app.core.logging_setup import setup_logger
 
-# Configure logging for the API
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure logging for the API (Use LOG_LEVEL env var, default to INFO)
+_LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+raw_log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+
+log_level = raw_log_level if raw_log_level in _LOG_LEVELS else "INFO"
+logger = setup_logger(__name__, level=getattr(logging, log_level))
+
+if raw_log_level not in _LOG_LEVELS and raw_log_level != "":
+    logger.warning(f"Invalid LOG_LEVEL '{raw_log_level}' provided in env. Falling back to INFO.")
 
 app = FastAPI(
     title="HighGrowthJobs API",
@@ -88,8 +99,9 @@ async def get_jobs(
     Fetches active high-growth jobs with eager-loaded company and VC firm data.
     Supports server-side pagination, filtering, and PostgreSQL full-text search.
     """
-    # Use proper logging instead of prints
-    logger.debug(f"Search API: q='{search}', page={page}, roles={roleType}, stage={fundingStage}")
+    start_time = time.perf_counter()
+    # Detailed log (only visible if LOG_LEVEL=DEBUG)
+    logger.debug(f"Search Parameters: q='{search}', page={page}, roles={roleType}, stage={fundingStage}")
 
     try:
         # 1. Base query with eager loading
@@ -153,6 +165,10 @@ async def get_jobs(
         jobs = session.exec(stmt).all()
 
         has_next = total_count > (page * limit)
+        latency = (time.perf_counter() - start_time) * 1000
+        
+        # High-level summary log (visible in INFO level)
+        logger.info(f"Search Complete: found {total_count} results in {latency:.2f}ms | q='{search or ''}'")
 
         return PaginatedJobResponse(
             data=jobs,
@@ -164,5 +180,5 @@ async def get_jobs(
             )
         )
     except Exception as e:
-        logger.error(f"Failed to fetch jobs: {str(e)}")
+        logger.error(f"Search API Error for q='{search or ''}'", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error while searching job data")

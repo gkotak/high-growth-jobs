@@ -30,7 +30,7 @@ class JanitorDaemon:
             try:
                 logger.info("🧹 Starting scheduled cleanup and sync...")
                 # In a real Railway deployment, this might take a while
-                self.service.cleanup_and_sync()
+                await self.service.cleanup_and_sync()
                 logger.info(f"✅ Sync complete. Sleeping for {self.interval_seconds} seconds...")
             except Exception as e:
                 logger.error(f"❌ Janitor encountered an error: {e}")

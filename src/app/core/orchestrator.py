@@ -11,7 +11,7 @@ class MarketScraperOrchestrator:
         self.ats_linker = ATSLinkerAdapter()
         self.multipass_scraper = MultipassScraperAdapter()
 
-    def run_for_company(self, company: Company, current_hash: Optional[str] = None) -> tuple[List[Job], Optional[str]]:
+    async def run_for_company(self, company: Company, current_hash: Optional[str] = None) -> tuple[List[Job], Optional[str]]:
         """
         Runs the scraping sequence for a company.
         """
@@ -21,7 +21,7 @@ class MarketScraperOrchestrator:
 
         # Step 1: Try ATS Linker (Level 0)
         logger.info(f"Checking ATS for {company.name}")
-        jobs = self.ats_linker.scrape_jobs(str(company.id), company.website_url)
+        jobs, _ = await self.ats_linker.scrape_jobs(str(company.id), company.website_url)
         
         if jobs:
             logger.info(f"Found {len(jobs)} jobs via ATS Linker for {company.name}")
@@ -29,11 +29,11 @@ class MarketScraperOrchestrator:
 
         # Step 1.5: Proactive ATS Probe (Try common slugs)
         logger.info(f"Probing ATS for {company.name}")
-        jobs = self.ats_linker.probe_for_ats(company.name, company.website_url, str(company.id))
+        jobs = await self.ats_linker.probe_for_ats(company.name, company.website_url, str(company.id))
         if jobs:
             logger.info(f"Found {len(jobs)} jobs via ATS Probing for {company.name}")
             return jobs, None
 
         # Step 2: Try Multipass Scraper (Level 1 & 2) with Hashing
         logger.info(f"Using Multipass Scraper for {company.name}")
-        return self.multipass_scraper.scrape_jobs(str(company.id), company.website_url, current_hash=current_hash)
+        return await self.multipass_scraper.scrape_jobs(str(company.id), company.website_url, current_hash=current_hash)

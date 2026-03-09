@@ -1,12 +1,13 @@
 import os
 import httpx
+import asyncio
 import instructor
 import google.generativeai as genai
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
-from playwright.sync_api import sync_playwright
-from playwright_stealth import Stealth
-from typing import List, Optional
+from playwright.async_api import async_playwright
+from playwright_stealth import stealth
+from typing import List, Optional, Tuple
 import hashlib
 from src.app.ports.job_ingest import JobIngestPort
 from src.data_model.models import Job
@@ -34,21 +35,18 @@ class MultipassScraperAdapter(JobIngestPort):
             mode=instructor.Mode.GEMINI_JSON,
         )
 
-    def scrape_jobs(self, company_id: str, website_url: str, current_hash: Optional[str] = None) -> tuple[List[Job], Optional[str]]:
+    async def scrape_jobs(self, company_id: str, website_url: str, current_hash: Optional[str] = None) -> Tuple[List[Job], Optional[str]]:
         """
         Implementation of the Multipass Scraping strategy:
         1. Static BS4 (Cheap/Fast) + Hash Check
         2. AI Link Hopping (BS4 on Career page)
         3. Playwright (Final Fallback)
-        
-        Returns: (List[Job], new_hash)
         """
         logger.info(f"Multipass: Starting Tier 3 for {website_url}")
         
         # --- PHASE 1: STATIC BS4 + HASH CHECK ---
-        html = self._static_scrape(website_url)
+        html = await self._static_scrape(website_url)
         if html and not self._is_javascript_wall(html):
-            # Compute a hash of the visible text to detect changes
             soup = BeautifulSoup(html, "html.parser")
             visible_text = soup.get_text(separator=" ", strip=True)
             new_hash = hashlib.sha256(visible_text.encode('utf-8')).hexdigest()
@@ -57,30 +55,28 @@ class MultipassScraperAdapter(JobIngestPort):
                 logger.info(f"⏭️ Smart Skip: Content hash matches for {website_url}. No changes detected.")
                 return [], new_hash
 
-            # Check if jobs are already here
-            jobs = self._extract_jobs_with_llm(html, company_id, website_url)
+            jobs = await self._extract_jobs_with_llm(html, company_id, website_url)
             if jobs:
                 logger.info(f"Success: Found {len(jobs)} jobs via static scrape of {website_url}")
                 return jobs, new_hash
             
             # --- PHASE 2: AI LINK HOPPING (STATIC) ---
             logger.info("Jobs not found on landing page. Attempting AI link detection...")
-            career_link = self._detect_career_link(html, website_url)
+            career_link = await self._detect_career_link(html, website_url)
             
             if career_link and career_link.startswith("http"):
                 logger.info(f"Hopping to detected link: {career_link}")
-                career_html = self._static_scrape(career_link)
+                career_html = await self._static_scrape(career_link)
                 if career_html and not self._is_javascript_wall(career_html):
-                    jobs = self._extract_jobs_with_llm(career_html, company_id, career_link)
+                    jobs = await self._extract_jobs_with_llm(career_html, company_id, career_link)
                     if jobs:
                         logger.info(f"Success: Found {len(jobs)} jobs via link-hop to {career_link}")
                         return jobs, new_hash
 
         # --- PHASE 3: PLAYWRIGHT (THE HAMMER) ---
         logger.info(f"Static methods failed for {website_url}. Falling back to Playwright...")
-        browser_html = self._browser_scrape(website_url)
+        browser_html = await self._browser_scrape(website_url)
         if browser_html:
-            # Re-compute hash from browser content for custom sites
             browser_soup = BeautifulSoup(browser_html, "html.parser")
             browser_text = browser_soup.get_text(separator=" ", strip=True)
             new_hash = hashlib.sha256(browser_text.encode('utf-8')).hexdigest()
@@ -89,7 +85,7 @@ class MultipassScraperAdapter(JobIngestPort):
                 logger.info(f"⏭️ Smart Skip: Browser content hash matches for {website_url}.")
                 return [], new_hash
 
-            jobs = self._extract_jobs_with_llm(browser_html, company_id, website_url)
+            jobs = await self._extract_jobs_with_llm(browser_html, company_id, website_url)
             if jobs:
                 logger.info(f"Success: Found {len(jobs)} jobs via Playwright for {website_url}")
                 return jobs, new_hash
@@ -97,12 +93,17 @@ class MultipassScraperAdapter(JobIngestPort):
         logger.warning(f"All Multipass Tiers failed for {website_url}")
         return [], None
 
-    def _detect_career_link(self, html: str, url: str) -> Optional[str]:
-        """Uses AI to find a 'Careers' link from a static HTML snippet."""
+    async def deep_scrape_job(self, job_url: str) -> str:
+        """
+        Deep-scraping Phase 2: Grab the raw HTML body for AI extraction.
+        Currently defaults to a fast HTTP GET.
+        """
+        html = await self._static_scrape(job_url)
+        return html or ""
+
+    async def _detect_career_link(self, html: str, url: str) -> Optional[str]:
         soup = BeautifulSoup(html, "html.parser")
-        # Extract all links with their text
         links = [{"text": a.get_text(strip=True), "href": a.get("href")} for a in soup.find_all("a") if a.get("href")]
-        # Truncate to save tokens
         links_context = str(links)[:5000]
 
         try:
@@ -114,10 +115,14 @@ class MultipassScraperAdapter(JobIngestPort):
             from src.app.core.prompts import MULTIPASS_LINK_DETECTION_PROMPT
             prompt = MULTIPASS_LINK_DETECTION_PROMPT.format(url=url, text=links_context)
             
-            result = self.client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                response_model=LinkDetection,
-            )
+            # Using asyncio.to_thread because instructor's client call is synchronous here
+            def _ask_gemini():
+                return self.client.chat.completions.create(
+                    messages=[{"role": "user", "content": prompt}],
+                    response_model=LinkDetection,
+                )
+            
+            result = await asyncio.to_thread(_ask_gemini)
 
             if result.status == "ALREADY_ON_JOBS_PAGE":
                 return None
@@ -125,7 +130,6 @@ class MultipassScraperAdapter(JobIngestPort):
             if result.url and result.url.startswith("http"):
                 return result.url
                 
-            # Handle relative URLs
             if result.url and not result.url.startswith("http"):
                 from urllib.parse import urljoin
                 return urljoin(url, result.url)
@@ -135,47 +139,41 @@ class MultipassScraperAdapter(JobIngestPort):
             logger.warning(f"Link detection failed: {e}")
             return None
 
-    def _static_scrape(self, url: str) -> str:
+    async def _static_scrape(self, url: str) -> str:
         try:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             }
-            with httpx.Client(follow_redirects=True, timeout=15.0, headers=headers) as client:
-                response = client.get(url)
+            async with httpx.AsyncClient(follow_redirects=True, timeout=15.0, headers=headers) as client:
+                response = await client.get(url)
                 return response.text
         except Exception as e:
-            logger.error(f"Static scrape failed: {e}")
+            logger.error(f"Static scrape failed for {url}: {e}")
             return ""
 
-    def _browser_scrape(self, url: str, disable_agentic: bool = False) -> str:
+    async def _browser_scrape(self, url: str, disable_agentic: bool = False) -> str:
         try:
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
-                page = browser.new_page()
-                Stealth().apply_stealth_sync(page)
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                page = await browser.new_page()
+                await stealth(page)
                 
                 logger.info(f"Navigating to {url} via Browser...")
-                page.goto(url, wait_until="domcontentloaded", timeout=60000)
+                await page.goto(url, wait_until="domcontentloaded", timeout=60000)
                 
-                # Try Agentic Navigation if we don't see jobs immediately
                 if not disable_agentic:
-                    self._navigate_agentically(page)
+                    await self._navigate_agentically(page)
                 
-                # Final wait for any lazy-loading content
-                page.wait_for_timeout(10000) 
-                content = page.content()
-                browser.close()
+                await page.wait_for_timeout(10000) 
+                content = await page.content()
+                await browser.close()
                 return content
         except Exception as e:
-            logger.error(f"Browser scrape failed: {e}")
+            logger.error(f"Browser scrape failed for {url}: {e}")
             return ""
 
-    def _navigate_agentically(self, page):
-        """
-        Uses LLM to find the 'See Jobs' button if we are stuck on a landing page.
-        """
-        # 1. Capture all clickable elements
-        elements = page.evaluate("""() => {
+    async def _navigate_agentically(self, page):
+        elements = await page.evaluate("""() => {
             return Array.from(document.querySelectorAll('a, button'))
                 .map(el => ({
                     text: el.innerText.trim(),
@@ -193,30 +191,31 @@ class MultipassScraperAdapter(JobIngestPort):
         logger.info(f"Analyzing {len(elements)} clickable elements for navigation...")
         
         try:
-            # Definition for the navigation action
             class NavigationAction(BaseModel):
                 element_text: str
                 reason: str
 
-            # Ask Gemini which element to click
             from src.app.core.prompts import MULTIPASS_NAVIGATION_PROMPT
             prompt = MULTIPASS_NAVIGATION_PROMPT.format(elements=elements)
             
-            action = self.client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                response_model=NavigationAction,
-            )
+            def _ask_gemini_nav():
+                return self.client.chat.completions.create(
+                    messages=[{"role": "user", "content": prompt}],
+                    response_model=NavigationAction,
+                )
+            
+            action = await asyncio.to_thread(_ask_gemini_nav)
 
             if action.element_text.upper() != "NONE":
                 logger.info(f"Agentic Nav: Clicking '{action.element_text}' because {action.reason}")
-                page.click(f"text='{action.element_text}'", timeout=5000)
-                page.wait_for_timeout(3000)
+                await page.click(f"text='{action.element_text}'", timeout=5000)
+                await page.wait_for_timeout(3000)
             else:
                 logger.info("Agentic Nav: Already on target page.")
 
         except Exception as e:
             logger.warning(f"Agentic navigation skipped: {e}")
-            page.wait_for_timeout(3000) # Fallback wait
+            await page.wait_for_timeout(3000) 
 
     def _is_javascript_wall(self, html: str) -> bool:
         if not html:
@@ -229,38 +228,37 @@ class MultipassScraperAdapter(JobIngestPort):
             return True
         return False
 
-    def _extract_jobs_with_llm(self, html: str, company_id: str, base_url: str) -> List[Job]:
-        # Clean HTML to save tokens
+    async def _extract_jobs_with_llm(self, html: str, company_id: str, base_url: str) -> List[Job]:
         soup = BeautifulSoup(html, "html.parser")
-        # Keep nav/footer for now as they might contain important links
         for script in soup(["script", "style", "svg"]):
             script.decompose()
         
-        # Get a more readable version of the text
         clean_text = soup.get_text(separator="\n", strip=True)
-        # If text is too small, maybe we are blocked
         if len(clean_text) < 200:
             logger.warning(f"Extracted text is very short ({len(clean_text)} chars). Site might be blocking or empty.")
-            # Let's try to keep some HTML structure if text is too thin
             clean_text = str(soup.body)[:20000]
 
         logger.info(f"Sending {len(clean_text[:15000])} characters to Gemini for extraction...")
 
         try:
             from src.app.core.prompts import MULTIPASS_JOB_EXTRACTION_SYSTEM, MULTIPASS_JOB_EXTRACTION_USER
-            response = self.client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "system",
-                        "content": MULTIPASS_JOB_EXTRACTION_SYSTEM
-                    },
-                    {
-                        "role": "user",
-                        "content": MULTIPASS_JOB_EXTRACTION_USER.format(base_url=base_url, clean_text=clean_text)
-                    }
-                ],
-                response_model=JobList,
-            )
+            
+            def _ask_gemini_extract():
+                return self.client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": MULTIPASS_JOB_EXTRACTION_SYSTEM
+                        },
+                        {
+                            "role": "user",
+                            "content": MULTIPASS_JOB_EXTRACTION_USER.format(base_url=base_url, clean_text=clean_text)
+                        }
+                    ],
+                    response_model=JobList,
+                )
+                
+            response = await asyncio.to_thread(_ask_gemini_extract)
 
             result_jobs = []
             for ext in response.jobs:
@@ -271,6 +269,7 @@ class MultipassScraperAdapter(JobIngestPort):
                     department=ext.department,
                     salary_range=ext.salary_range,
                     company_id=company_id,
+                    needs_deep_scrape=True,
                 ))
             
             logger.info(f"Gemini extracted {len(result_jobs)} jobs.")

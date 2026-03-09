@@ -13,7 +13,7 @@ class JanitorService:
     def __init__(self):
         self.orchestrator = MarketScraperOrchestrator()
 
-    def cleanup_and_sync(self, limit: int = 100):
+    async def cleanup_and_sync(self, limit: int = 100):
         """
         The main Janitor loop:
         1. Find companies to scrape (sorted by cb_rank)
@@ -43,7 +43,7 @@ class JanitorService:
 
             for company in companies:
                 try:
-                    self._process_company(session, company)
+                    await self._process_company(session, company)
                     # Update last_scraped_at
                     company.last_scraped_at = datetime.utcnow()
                     session.add(company)
@@ -52,11 +52,11 @@ class JanitorService:
                     logger.error(f"Janitor failed for {company.name}: {e}")
                     session.rollback()
 
-    def _process_company(self, session: Session, company: Company):
+    async def _process_company(self, session: Session, company: Company):
         logger.info(f"Cleaning/Syncing {company.name}...")
         
         # A. Trigger Scraper (Pass hash for Smart Skip)
-        scraped_jobs, new_hash = self.orchestrator.run_for_company(company, current_hash=company.last_content_hash)
+        scraped_jobs, new_hash = await self.orchestrator.run_for_company(company, current_hash=company.last_content_hash)
         
         # Update hash regardless of whether jobs were found (to track the check)
         if new_hash:
