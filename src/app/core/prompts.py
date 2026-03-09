@@ -46,5 +46,5 @@ MULTIPASS_NAVIGATION_PROMPT = "Given these UI elements found on a career site's 
 
 MULTIPASS_JOB_EXTRACTION_SYSTEM = "You are an expert at extracting job listings from website content. Return a JSON list of jobs found."
 
-MULTIPASS_JOB_EXTRACTION_USER = "Extract all job listings from this content. Ensure URLs are absolute using {base_url} if needed. \n\nContent:\n{clean_text}"
+MULTIPASS_JOB_EXTRACTION_USER = "Extract all job listings from this content. Ensure URLs are absolute using {base_url} if needed. If jobs are explicitly grouped by department or function (e.g., under a 'Sales' or 'Engineering' header), ensure you extract that as the department for each job in that group. \n\nContent:\n{clean_text}"
 

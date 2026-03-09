@@ -68,9 +68,15 @@ class ATSLinkerAdapter(JobIngestPort):
                 data = response.json()
                 jobs = []
                 for item in data.get("jobs", []):
+                    # Greenhouse often groups or lists department IDs. Let's try basic extraction if possible.
+                    department_name = None
+                    if "departments" in item and len(item["departments"]) > 0:
+                        department_name = item["departments"][0].get("name")
+                        
                     jobs.append(Job(
                         title=item["title"],
                         location=item["location"]["name"],
+                        department=department_name,
                         job_url=item["absolute_url"],
                         company_id=company_id,
                         needs_deep_scrape=True,
@@ -93,9 +99,13 @@ class ATSLinkerAdapter(JobIngestPort):
                 jobs = []
                 if not isinstance(data, list): return []
                 for item in data:
+                    cat = item.get("categories", {})
+                    department_name = cat.get("department") or cat.get("team")
+
                     jobs.append(Job(
                         title=item["text"],
-                        location=item["categories"]["location"],
+                        location=cat.get("location", "Remote"),
+                        department=department_name,
                         job_url=item["hostedUrl"],
                         company_id=company_id,
                         needs_deep_scrape=True,
@@ -121,6 +131,7 @@ class ATSLinkerAdapter(JobIngestPort):
                     jobs.append(Job(
                         title=item["title"],
                         location=item.get("location", "Remote"),
+                        department=item.get("department"),
                         job_url=item["jobUrl"],
                         company_id=company_id,
                         needs_deep_scrape=True,
