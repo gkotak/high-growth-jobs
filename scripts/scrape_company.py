@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import logging
+import asyncio
 from sqlmodel import Session, select
 from dotenv import load_dotenv
 
@@ -14,7 +15,7 @@ from src.app.core.logging_setup import setup_logger
 
 logger = setup_logger("ManualScraper")
 
-def scrape_single_company(identifier: str):
+async def scrape_single_company(identifier: str):
     """
     Scrapes a single company by name or exact website URL.
     """
@@ -48,7 +49,7 @@ def scrape_single_company(identifier: str):
         company.last_content_hash = None
         
         try:
-            service._process_company(session, company)
+            await service._process_company(session, company)
             # The session is flushed inside _process_company, so we commit the final result
             session.commit()
             logger.info("✅ Targeted scrape completed successfully.")
@@ -67,4 +68,4 @@ if __name__ == "__main__":
     parser.add_argument("identifier", help="The company name or website URL (e.g., 'Anthropic' or 'https://anthropic.com')")
     args = parser.parse_args()
     
-    scrape_single_company(args.identifier)
+    asyncio.run(scrape_single_company(args.identifier))

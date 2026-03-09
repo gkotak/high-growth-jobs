@@ -6,7 +6,7 @@ import google.generativeai as genai
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 from playwright.async_api import async_playwright
-from playwright_stealth import stealth
+from playwright_stealth import Stealth
 from typing import List, Optional, Tuple
 import hashlib
 from src.app.ports.job_ingest import JobIngestPort
@@ -31,7 +31,7 @@ class MultipassScraperAdapter(JobIngestPort):
             genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
         
         self.client = instructor.from_gemini(
-            client=genai.GenerativeModel(model_name="gemini-1.5-flash"),
+            client=genai.GenerativeModel(model_name="gemini-2.5-flash"),
             mode=instructor.Mode.GEMINI_JSON,
         )
 
@@ -156,7 +156,7 @@ class MultipassScraperAdapter(JobIngestPort):
             async with async_playwright() as p:
                 browser = await p.chromium.launch(headless=True)
                 page = await browser.new_page()
-                await stealth(page)
+                await Stealth().apply_stealth_async(page)
                 
                 logger.info(f"Navigating to {url} via Browser...")
                 await page.goto(url, wait_until="domcontentloaded", timeout=60000)
