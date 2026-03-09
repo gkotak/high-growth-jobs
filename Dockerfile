@@ -10,9 +10,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
     && rm -rf /var/lib/apt/lists/* \
     && pip install uv
 
-# Tell uv to NEVER download its own Python — use the image's Python 3.12
-ENV UV_PYTHON_PREFERENCE=only-system
-ENV UV_PYTHON=/usr/bin/python3
+# The Playwright image ships Python 3.10, but we need >=3.11.
+# Let uv manage the Python version. build-essential is installed above
+# so greenlet can compile from source if no pre-built wheel exists.
+ENV UV_PYTHON=3.12
 
 # Copy the lockfile and project file
 COPY pyproject.toml uv.lock ./
