@@ -114,6 +114,7 @@ class Job(JobBase, table=True):
 class JobDetailsBase(SQLModel):
     description_html: Optional[str] = None
     description_text: Optional[str] = None
+    extracted_description: Optional[str] = None
     extracted_requirements: Optional[str] = None
     extracted_benefits: Optional[str] = None
 

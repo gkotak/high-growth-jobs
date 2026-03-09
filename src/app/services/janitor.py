@@ -142,6 +142,7 @@ class JanitorService:
                     job_details.description_text = desc_text
                     
                     if details:
+                        job_details.extracted_description = details.extracted_description
                         job_details.extracted_requirements = details.extracted_requirements
                         job_details.extracted_benefits = details.extracted_benefits
                         

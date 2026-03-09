@@ -26,6 +26,7 @@ class JobList(BaseModel):
     jobs: List[ExtractedJob]
 
 class ExtractedJobDetails(BaseModel):
+    extracted_description: Optional[str] = None
     extracted_requirements: Optional[str] = None
     extracted_benefits: Optional[str] = None
     functional_area: Optional[str] = None

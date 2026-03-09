@@ -52,6 +52,7 @@ MULTIPASS_JOB_EXTRACTION_USER = "Extract all job listings from this content. Ens
 DEEP_SCRAPE_JOB_DETAILS_SYSTEM = "You are an expert at analyzing job descriptions. Return a JSON object with the requested structural details."
 
 DEEP_SCRAPE_JOB_DETAILS_USER = """Analyze this job description content.
+Extract the core job description prose as a plain string, removing website headers, footers, and generic company boilerplate.
 Extract requirements as a markdown bulleted list. 
 Extract benefits as a markdown bulleted list. 
 Determine the functional area (Engineering, Product, Sales, Marketing, Operations, Design, HR, Finance, Other).
