@@ -26,6 +26,22 @@ Git Diff:
 
 
 # --- EPIC 3: JOB LISTING DISCOVERY (MULTIPASS SCRAPING) ---
+MULTIPASS_LINK_DETECTION_PROMPT = """
+You are analyzing the homepage or a landing page of a company's website: {url}
+The text content of the page is provided below. 
+
+Your goal: Find a link that leads to their list of job openings (Careers, Jobs, Open Roles, Join Us).
+
+1. If you see a list of individual job titles (e.g. "Software Engineer", "Product Manager"), return 'ALREADY_ON_JOBS_PAGE'.
+2. If you find a link to a careers page, return the absolute URL.
+3. If no relevant link is found, return 'NONE'.
+
+Output format: JSON with fields 'status' and 'url' and 'reason'.
+
+Content:
+{text}
+"""
+
 MULTIPASS_NAVIGATION_PROMPT = "Given these UI elements found on a career site's landing page, return the TEXT of the one most likely to lead to a list of ALL job openings or a 'Search jobs' view. If already looking at a list of job titles, return 'NONE'. \n\nElements: {elements}"
 
 MULTIPASS_JOB_EXTRACTION_SYSTEM = "You are an expert at extracting job listings from website content. Return a JSON list of jobs found."

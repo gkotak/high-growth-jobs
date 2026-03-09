@@ -29,27 +29,90 @@ class MultipassScraperAdapter(JobIngestPort):
             genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
         
         self.client = instructor.from_gemini(
-            client=genai.GenerativeModel(model_name="gemini-2.5-flash"),
+            client=genai.GenerativeModel(model_name="gemini-1.5-flash"),
             mode=instructor.Mode.GEMINI_JSON,
         )
 
-    def scrape_jobs(self, company_id: str, careers_url: str) -> List[Job]:
+    def scrape_jobs(self, company_id: str, website_url: str) -> List[Job]:
         """
-        Implementation of the Multipass Scraping strategy.
+        Implementation of the Multipass Scraping strategy:
+        1. Static BS4 (Cheap/Fast)
+        2. AI Link Hopping (BS4 on Career page)
+        3. Playwright (Final Fallback)
         """
-        # Level 1: Try Static Scrape (Fast)
-        logger.info(f"Attempting static scrape for {careers_url}")
-        html = self._static_scrape(careers_url)
+        logger.info(f"Multipass: Starting Tier 3 for {website_url}")
         
-        if self._is_javascript_wall(html):
-            logger.info("JavaScript wall detected. Retrying with Playwright...")
-            html = self._browser_scrape(careers_url)
+        # --- PHASE 1: STATIC BS4 ---
+        html = self._static_scrape(website_url)
+        if html and not self._is_javascript_wall(html):
+            # Check if jobs are already here
+            jobs = self._extract_jobs_with_llm(html, company_id, website_url)
+            if jobs:
+                logger.info(f"Success: Found {len(jobs)} jobs via static scrape of {website_url}")
+                return jobs
+            
+            # --- PHASE 2: AI LINK HOPPING (STATIC) ---
+            logger.info("Jobs not found on landing page. Attempting AI link detection...")
+            career_link = self._detect_career_link(html, website_url)
+            
+            if career_link and career_link.startswith("http"):
+                logger.info(f"Hopping to detected link: {career_link}")
+                career_html = self._static_scrape(career_link)
+                if career_html and not self._is_javascript_wall(career_html):
+                    jobs = self._extract_jobs_with_llm(career_html, company_id, career_link)
+                    if jobs:
+                        logger.info(f"Success: Found {len(jobs)} jobs via link-hop to {career_link}")
+                        return jobs
 
-        if not html:
-            return []
+        # --- PHASE 3: PLAYWRIGHT (THE HAMMER) ---
+        logger.info(f"Static methods failed for {website_url}. Falling back to Playwright...")
+        browser_html = self._browser_scrape(website_url)
+        if browser_html:
+            jobs = self._extract_jobs_with_llm(browser_html, company_id, website_url)
+            if jobs:
+                logger.info(f"Success: Found {len(jobs)} jobs via Playwright for {website_url}")
+                return jobs
 
-        # Level 2: Parse and Extract (Gemini Intelligence)
-        return self._extract_jobs_with_llm(html, company_id, careers_url)
+        logger.warning(f"All Multipass Tiers failed for {website_url}")
+        return []
+
+    def _detect_career_link(self, html: str, url: str) -> Optional[str]:
+        """Uses AI to find a 'Careers' link from a static HTML snippet."""
+        soup = BeautifulSoup(html, "html.parser")
+        # Extract all links with their text
+        links = [{"text": a.get_text(strip=True), "href": a.get("href")} for a in soup.find_all("a") if a.get("href")]
+        # Truncate to save tokens
+        links_context = str(links)[:5000]
+
+        try:
+            class LinkDetection(BaseModel):
+                status: str
+                url: Optional[str]
+                reason: str
+
+            from src.app.core.prompts import MULTIPASS_LINK_DETECTION_PROMPT
+            prompt = MULTIPASS_LINK_DETECTION_PROMPT.format(url=url, text=links_context)
+            
+            result = self.client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                response_model=LinkDetection,
+            )
+
+            if result.status == "ALREADY_ON_JOBS_PAGE":
+                return None
+            
+            if result.url and result.url.startswith("http"):
+                return result.url
+                
+            # Handle relative URLs
+            if result.url and not result.url.startswith("http"):
+                from urllib.parse import urljoin
+                return urljoin(url, result.url)
+
+            return None
+        except Exception as e:
+            logger.warning(f"Link detection failed: {e}")
+            return None
 
     def _static_scrape(self, url: str) -> str:
         try:
