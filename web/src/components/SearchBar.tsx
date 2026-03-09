@@ -15,7 +15,7 @@ const SearchBar = ({ value, onChange }: SearchBarProps) => {
         placeholder="Search by title, company, or skill..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-12 pl-11 text-base bg-background/50 border-border focus-visible:ring-primary shadow-sm hover:bg-background transition-all"
+        className="h-14 pl-12 text-base bg-white border-border/80 focus-visible:ring-primary shadow-md hover:shadow-lg transition-all rounded-xl"
       />
     </div>
   );
