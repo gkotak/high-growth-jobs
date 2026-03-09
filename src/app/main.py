@@ -1,9 +1,9 @@
 import logging
 from typing import List
 from uuid import UUID
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import Session, select, SQLModel
+from sqlmodel import Session, select, SQLModel, func, and_
 from sqlalchemy.orm import selectinload
 
 from src.app.core.database import get_session
@@ -39,6 +39,16 @@ class JobResponse(JobBase):
     id: UUID
     company: CompanyResponse
 
+class JobPaginationMeta(SQLModel):
+    total_count: int
+    page: int
+    limit: int
+    has_next: bool
+
+class PaginatedJobResponse(SQLModel):
+    data: List[JobResponse]
+    meta: JobPaginationMeta
+
 @app.get("/")
 async def root():
     return {
@@ -63,17 +73,76 @@ async def get_companies(session: Session = Depends(get_session)):
         logger.exception("Final trace for Fetch Companies operation failure:")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/api/jobs", response_model=List[JobResponse])
-async def get_jobs(session: Session = Depends(get_session)):
+@app.get("/api/jobs", response_model=PaginatedJobResponse)
+async def get_jobs(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
+    search: Optional[str] = None,
+    roleType: Optional[List[str]] = Query(None),
+    remote: Optional[List[str]] = Query(None),
+    fundingStage: Optional[List[str]] = Query(None),
+    investorTier: bool = Query(False),
+    session: Session = Depends(get_session)
+):
     """
-    Fetches all active high-growth jobs with eager-loaded company and VC firm data.
+    Fetches active high-growth jobs with eager-loaded company and VC firm data.
+    Supports server-side pagination, filtering, and PostgreSQL full-text search.
     """
     try:
-        stmt = select(Job).options(
+        # 1. Base query with eager loading
+        stmt = select(Job).join(Company).options(
             selectinload(Job.company).selectinload(Company.vc_firms)
-        )
+        ).where(Job.status == "active")
+
+        # 2. Apply Full-Text Search if provided
+        # We search across Job titles and Company names
+        if search:
+            search_query = func.websearch_to_tsquery('english', search)
+            # Combine title and company name for the search vector
+            search_vector = func.setweight(func.to_tsvector('english', Job.title), 'A') + \
+                            func.setweight(func.to_tsvector('english', Company.name), 'A')
+            
+            stmt = stmt.where(search_vector.op('@@')(search_query))
+            # Sort by rank
+            stmt = stmt.order_by(func.ts_rank(search_vector, search_query).desc())
+        else:
+            # Default sort by date
+            stmt = stmt.order_by(Job.created_at.desc())
+
+        # 3. Apply Filters
+        if roleType:
+            # Map frontend role types to functional_area or department
+            stmt = stmt.where(Job.functional_area.in_(roleType))
+        
+        if remote:
+            # Map 'Remote' vs 'On-site' to boolean
+            is_remote_filter = "Remote" in remote
+            if len(remote) == 1: # Only filtered for one or the other
+                 stmt = stmt.where(Job.is_remote == is_remote_filter)
+
+        if fundingStage:
+            # Stage names like 'Series A', 'Seed' etc
+            stmt = stmt.where(Company.stage.in_(fundingStage))
+
+        # 4. Count total matching rows (before pagination)
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_count = session.exec(count_stmt).one()
+
+        # 5. Apply Pagination
+        stmt = stmt.offset((page - 1) * limit).limit(limit)
         jobs = session.exec(stmt).all()
-        return jobs
+
+        has_next = total_count > (page * limit)
+
+        return PaginatedJobResponse(
+            data=jobs,
+            meta=JobPaginationMeta(
+                total_count=total_count,
+                page=page,
+                limit=limit,
+                has_next=has_next
+            )
+        )
     except Exception as e:
         logger.error(f"Failed to fetch jobs: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error while retrieving job data")
+        raise HTTPException(status_code=500, detail="Internal server error while searching job data")

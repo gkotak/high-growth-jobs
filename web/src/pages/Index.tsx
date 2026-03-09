@@ -2,29 +2,18 @@ import { useState, useMemo } from "react";
 import Header from "@/components/Header";
 import CompanySheet from "@/components/CompanySheet";
 import { useJobs } from "@/hooks/useJobs";
+import { useDebounce } from "@/hooks/useDebounce";
 import HeroSection from "@/widgets/landing/HeroSection";
 import FilterSection from "@/widgets/landing/FilterSection";
 import ControlBar from "@/widgets/landing/ControlBar";
 import JobListSection from "@/widgets/landing/JobListSection";
 import { FilterState } from "@/widgets/landing/types";
-
-const TOP_TIER_VCS = [
-  "Sequoia Capital", "a16z", "Benchmark", "Founders Fund", "Accel",
-  "Greylock", "Kleiner Perkins", "Index Ventures", "General Catalyst",
-  "Tiger Global", "Thrive Capital", "Coatue Management",
-];
-
-const FUNDING_STAGE_MAP: Record<string, string[]> = {
-  "Seed": ["Seed"],
-  "Series A": ["Series A"],
-  "Series B": ["Series B"],
-  "Series C": ["Series C"],
-  "Series D": ["Series D"],
-  "Series E+": ["Series E", "Series F", "Series G", "Series H", "Series I"],
-};
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 const Index = () => {
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [showFilters, setShowFilters] = useState(true);
   const [filters, setFilters] = useState<FilterState>({
     roleType: [],
@@ -35,7 +24,19 @@ const Index = () => {
   });
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
-  const { data: jobs = [], isLoading } = useJobs();
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useJobs(debouncedSearch, filters);
+
+  const allJobs = useMemo(() => {
+    return data?.pages.flatMap((page) => page.data) ?? [];
+  }, [data]);
+
+  const totalCount = data?.pages[0]?.meta.total_count ?? 0;
 
   const activeFilterCount = useMemo(() => {
     return (
@@ -47,55 +48,8 @@ const Index = () => {
     );
   }, [filters]);
 
-  const filteredJobs = useMemo(() => {
-    return jobs.filter((job) => {
-      // Search
-      if (search) {
-        const q = search.toLowerCase();
-        const match =
-          job.title.toLowerCase().includes(q) ||
-          job.company.name.toLowerCase().includes(q) ||
-          job.skills.some((s) => s.toLowerCase().includes(q));
-        if (!match) return false;
-      }
-
-      // Role type
-      if (filters.roleType.length > 0 && !filters.roleType.includes(job.roleType))
-        return false;
-
-      // Experience
-      if (
-        filters.experienceLevel.length > 0 &&
-        !filters.experienceLevel.includes(job.experienceLevel)
-      )
-        return false;
-
-      // Remote
-      if (filters.remote.length > 0 && !filters.remote.includes(job.remote))
-        return false;
-
-      // Funding stage
-      if (filters.fundingStage.length > 0) {
-        const allowedStages = filters.fundingStage.flatMap(
-          (s) => FUNDING_STAGE_MAP[s] || []
-        );
-        if (!allowedStages.includes(job.company.fundingStage)) return false;
-      }
-
-      // Investor tier
-      if (filters.investorTier) {
-        const hasTopVC = job.company.investors.some((inv) =>
-          TOP_TIER_VCS.includes(inv)
-        );
-        if (!hasTopVC) return false;
-      }
-
-      return true;
-    });
-  }, [search, filters, jobs]);
-
   const selectedCompany = selectedCompanyId
-    ? jobs.find((j) => j.company.id === selectedCompanyId)?.company ?? null
+    ? allJobs.find((j) => j.company.id === selectedCompanyId)?.company ?? null
     : null;
 
   return (
@@ -119,15 +73,35 @@ const Index = () => {
               onFilterChange={setFilters}
               showFilters={showFilters}
               onToggleFilters={() => setShowFilters(!showFilters)}
-              jobCount={filteredJobs.length}
+              jobCount={totalCount}
               activeFilterCount={activeFilterCount}
             />
 
             <JobListSection
-              jobs={filteredJobs}
+              jobs={allJobs}
               isLoading={isLoading}
               onCompanyClick={setSelectedCompanyId}
             />
+
+            {hasNextPage && (
+              <div className="mt-8 flex justify-center pb-10">
+                <Button
+                  variant="outline"
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="w-full sm:w-auto h-12 px-8 font-medium border-border/60 bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading more...
+                    </>
+                  ) : (
+                    "Load more roles"
+                  )}
+                </Button>
+              </div>
+            )}
           </main>
         </div>
       </div>

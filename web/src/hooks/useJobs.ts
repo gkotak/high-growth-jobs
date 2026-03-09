@@ -1,20 +1,44 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { Job, Company, Signal } from '../data/mockJobs';
+import { FilterState } from '../widgets/landing/types';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
-export function useJobs() {
-    return useQuery({
-        queryKey: ['jobs'],
-        queryFn: async (): Promise<Job[]> => {
-            const response = await fetch(`${API_URL}/api/jobs`);
+const FUNDING_STAGE_MAP: Record<string, string[]> = {
+    "Seed": ["Seed"],
+    "Series A": ["Series A"],
+    "Series B": ["Series B"],
+    "Series C": ["Series C"],
+    "Series D": ["Series D"],
+    "Series E+": ["Series E", "Series F", "Series G", "Series H", "Series I"],
+};
+
+export function useJobs(search: string = "", filters: FilterState) {
+    return useInfiniteQuery({
+        queryKey: ['jobs', search, filters],
+        queryFn: async ({ pageParam = 1 }): Promise<{ data: Job[], meta: any }> => {
+            const params = new URLSearchParams();
+            params.append('page', pageParam.toString());
+            params.append('limit', '50');
+
+            if (search) params.append('search', search);
+
+            filters.roleType.forEach(rt => params.append('roleType', rt));
+            filters.remote.forEach(rem => params.append('remote', rem));
+
+            // Map fundingStage carefully
+            const stagesToFetch = filters.fundingStage.flatMap(fs => FUNDING_STAGE_MAP[fs] || [fs]);
+            stagesToFetch.forEach(fs => params.append('fundingStage', fs));
+
+            if (filters.investorTier) params.append('investorTier', 'true');
+
+            const response = await fetch(`${API_URL}/api/jobs?${params.toString()}`);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
-            const data = await response.json();
+            const result = await response.json();
 
-            return data.map((job: any): Job => {
-                // Map backend Company to frontend Company
+            const mappedData = result.data.map((job: any): Job => {
                 const comp = job.company;
                 const totalFundingNum = comp.total_funding_amount
                     ? parseInt(comp.total_funding_amount.replace(/[^0-9]/g, ''), 10)
@@ -58,11 +82,23 @@ export function useJobs() {
                     postedAt: job.created_at || new Date().toISOString().split('T')[0],
                     roleType: job.functional_area || job.department || 'Other',
                     experienceLevel: job.experience_level || 'Mid',
-                    skills: [], // We can parse skills later with AI
+                    skills: [],
                     signals: signals,
                     description: job.description || 'No description provided.',
                 };
             });
-        }
+
+            return {
+                data: mappedData,
+                meta: result.meta
+            };
+        },
+        getNextPageParam: (lastPage) => {
+            if (lastPage.meta.has_next) {
+                return lastPage.meta.page + 1;
+            }
+            return undefined;
+        },
+        initialPageParam: 1,
     });
 }
