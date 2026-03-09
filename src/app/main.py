@@ -104,17 +104,19 @@ async def get_jobs(
             search_query = func.websearch_to_tsquery('english', s)
             
             # Weigh titles (A) higher than company names (B) for relevance
-            search_vector = (
-                func.setweight(func.to_tsvector('english', func.coalesce(Job.title, '')), 'A') +
-                func.setweight(func.to_tsvector('english', func.coalesce(Company.name, '')), 'B')
-            )
+            # IMPORTANT: Use || operator for tsvector concatenation, not +
+            title_vector = func.setweight(func.to_tsvector('english', func.coalesce(Job.title, '')), 'A')
+            company_vector = func.setweight(func.to_tsvector('english', func.coalesce(Company.name, '')), 'B')
+            search_vector = title_vector.op('||')(company_vector)
             
             # Use ILIKE as a direct fallback for substring matching (fixes 'soft' vs 'software')
             search_pattern = f"%{s}%"
             stmt = stmt.where(
-                (Job.title.ilike(search_pattern)) | 
-                (Company.name.ilike(search_pattern)) |
-                (search_vector.op('@@')(search_query))
+                (Job.status == "active") & (
+                    (Job.title.ilike(search_pattern)) | 
+                    (Company.name.ilike(search_pattern)) |
+                    (search_vector.op('@@')(search_query))
+                )
             )
             
             # Sort by rank (relevance) primarily, then by date
