@@ -48,3 +48,17 @@ MULTIPASS_JOB_EXTRACTION_SYSTEM = "You are an expert at extracting job listings 
 
 MULTIPASS_JOB_EXTRACTION_USER = "Extract all job listings from this content. Ensure URLs are absolute using {base_url} if needed. If jobs are explicitly grouped by department or function (e.g., under a 'Sales' or 'Engineering' header), ensure you extract that as the department for each job in that group. \n\nContent:\n{clean_text}"
 
+# --- EPIC 3: JOB DEEP SCRAPING (PHASE 2) ---
+DEEP_SCRAPE_JOB_DETAILS_SYSTEM = "You are an expert at analyzing job descriptions. Return a JSON object with the requested structural details."
+
+DEEP_SCRAPE_JOB_DETAILS_USER = """Analyze this job description content.
+Extract requirements as a markdown bulleted list. 
+Extract benefits as a markdown bulleted list. 
+Determine the functional area (Engineering, Product, Sales, Marketing, Operations, Design, HR, Finance, Other).
+Determine the experience level (Intern, Entry, Mid, Senior, Lead, Staff, Director, Executive).
+Refine the exact location if clearly stated (e.g., 'New York, NY' or 'San Francisco, CA').
+Determine if it is explicitly noted as a remote or remote-friendly role.
+
+Content:
+{clean_text}
+"""

@@ -25,6 +25,14 @@ class ExtractedJob(BaseModel):
 class JobList(BaseModel):
     jobs: List[ExtractedJob]
 
+class ExtractedJobDetails(BaseModel):
+    extracted_requirements: Optional[str] = None
+    extracted_benefits: Optional[str] = None
+    functional_area: Optional[str] = None
+    experience_level: Optional[str] = None
+    refined_location: Optional[str] = None
+    is_remote: bool = False
+
 class MultipassScraperAdapter(JobIngestPort):
     def __init__(self):
         if os.getenv("GEMINI_API_KEY"):
@@ -96,10 +104,52 @@ class MultipassScraperAdapter(JobIngestPort):
     async def deep_scrape_job(self, job_url: str) -> str:
         """
         Deep-scraping Phase 2: Grab the raw HTML body for AI extraction.
-        Currently defaults to a fast HTTP GET.
+        Attempts fast HTTP GET, falls back to Playwright if needed.
         """
         html = await self._static_scrape(job_url)
+        if not html or self._is_javascript_wall(html):
+            logger.info(f"Static deep scrape failed or hit JS wall for {job_url}. Falling back to Browser...")
+            html = await self._browser_scrape(job_url, disable_agentic=True)
+            
         return html or ""
+
+    async def parse_job_details(self, html: str) -> Optional[ExtractedJobDetails]:
+        """
+        Passes the extracted job HTML body to the LLM to get Normalized Schema fields.
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        for script in soup(["script", "style", "svg"]):
+            script.decompose()
+        
+        clean_text = soup.get_text(separator="\n", strip=True)
+        if len(clean_text) < 200:
+            clean_text = str(soup.body)[:15000] if soup.body else html[:15000]
+
+        try:
+            from src.app.core.prompts import DEEP_SCRAPE_JOB_DETAILS_SYSTEM, DEEP_SCRAPE_JOB_DETAILS_USER
+            
+            def _ask_gemini_parse():
+                return self.client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": DEEP_SCRAPE_JOB_DETAILS_SYSTEM
+                        },
+                        {
+                            "role": "user",
+                            "content": DEEP_SCRAPE_JOB_DETAILS_USER.format(clean_text=clean_text[:15000])
+                        }
+                    ],
+                    response_model=ExtractedJobDetails,
+                )
+                
+            response = await asyncio.to_thread(_ask_gemini_parse)
+            logger.info("Gemini parsed job details successfully.")
+            return response
+            
+        except Exception as e:
+            logger.error(f"LLM details extraction failed: {e}")
+            return None
 
     async def _detect_career_link(self, html: str, url: str) -> Optional[str]:
         soup = BeautifulSoup(html, "html.parser")

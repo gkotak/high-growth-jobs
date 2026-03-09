@@ -37,3 +37,22 @@ class MarketScraperOrchestrator:
         # Step 2: Try Multipass Scraper (Level 1 & 2) with Hashing
         logger.info(f"Using Multipass Scraper for {company.name}")
         return await self.multipass_scraper.scrape_jobs(str(company.id), company.website_url, current_hash=current_hash)
+
+    async def run_deep_scrape_for_job(self, job: Job) -> tuple[Optional[str], Optional[any]]:
+        """
+        Runs Phase 2 enrichment. Finds raw HTML and extracts key structured fields.
+        Returns: (html_content, ExtractedJobDetails schema)
+        """
+        logger.info(f"Deep Scrape Orchestrator running for {job.job_url}")
+        
+        # 1. Fetch the raw HTML body. Multipass handles HTTP fast-fetch + Playwright fallback
+        html = await self.multipass_scraper.deep_scrape_job(job.job_url)
+        if not html:
+            logger.warning(f"Could not retrieve HTML for deep scrape: {job.job_url}")
+            return None, None
+            
+        # 2. Extract parsed structured schema from the raw HTML text
+        logger.info(f"HTML retrieved. Passing {len(html)} chars to AI details parser...")
+        details = await self.multipass_scraper.parse_job_details(html)
+        
+        return html, details

@@ -28,9 +28,13 @@ class JanitorDaemon:
         
         while True:
             try:
-                logger.info("🧹 Starting scheduled cleanup and sync...")
+                logger.info("🧹 Starting scheduled Phase 1 cleanup and sync...")
                 # In a real Railway deployment, this might take a while
                 await self.service.cleanup_and_sync()
+                
+                logger.info("🧹 Starting scheduled Phase 2 enrichment...")
+                await self.service.enrich_pending_jobs(limit=50)
+                
                 logger.info(f"✅ Sync complete. Sleeping for {self.interval_seconds} seconds...")
             except Exception as e:
                 logger.error(f"❌ Janitor encountered an error: {e}")

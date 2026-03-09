@@ -98,3 +98,70 @@ class JanitorService:
 
         session.flush() # Let the outer loop commit to maintain atomicity
         logger.info(f"Done with {company.name}. New: {new_count}, Closed: {stale_count}")
+
+    async def enrich_pending_jobs(self, limit: int = 50):
+        """
+        Phase 2: Deep scrapes a batch of jobs reading their raw HTML descriptions
+        and extracting AI structured details to attach to JobDetails.
+        """
+        logger.info(f"🧹 Phase 2 Enricher looking for up to {limit} pending jobs...")
+        with Session(engine) as session:
+            statement = (
+                select(Job)
+                .where(Job.needs_deep_scrape == True)
+                .where(Job.status == "active")
+                .limit(limit)
+            )
+            jobs = session.exec(statement).all()
+            
+            if not jobs:
+                logger.info("No pending jobs need deep scraping right now.")
+                return
+
+            logger.info(f"Found {len(jobs)} jobs needing deep scrape. Starting enrichment...")
+            from src.data_model.models import JobDetails
+            from bs4 import BeautifulSoup
+            
+            for job in jobs:
+                try:
+                    logger.info(f"🔍 Deep scraping job: {job.title} at {job.job_url}")
+                    html, details = await self.orchestrator.run_deep_scrape_for_job(job)
+                    
+                    if not html:
+                        logger.warning(f"⚠️ Could not retrieve HTML for {job.job_url}. Skipping...")
+                        continue
+                        
+                    soup = BeautifulSoup(html, "html.parser")
+                    desc_text = soup.get_text(separator="\n", strip=True)
+                    
+                    # Check if JobDetails already exist (edge case)
+                    existing_details = session.exec(select(JobDetails).where(JobDetails.job_id == job.id)).first()
+                    job_details = existing_details if existing_details else JobDetails(job_id=job.id)
+                    
+                    job_details.description_html = html
+                    job_details.description_text = desc_text
+                    
+                    if details:
+                        job_details.extracted_requirements = details.extracted_requirements
+                        job_details.extracted_benefits = details.extracted_benefits
+                        
+                        # Phase 2 AI Normalization
+                        if details.functional_area:
+                            job.functional_area = details.functional_area
+                        if details.experience_level:
+                            job.experience_level = details.experience_level
+                        if details.refined_location:
+                            job.location = details.refined_location
+                        if details.is_remote:
+                            job.is_remote = True
+                    
+                    job.needs_deep_scrape = False
+                    
+                    session.add(job_details)
+                    session.add(job)
+                    session.commit()
+                    logger.info(f"✅ Successfully enriched: {job.title}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Failed to enrich job {job.id}: {e}")
+                    session.rollback()
