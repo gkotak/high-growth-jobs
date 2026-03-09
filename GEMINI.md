@@ -33,7 +33,10 @@ HighGrowthJobs proposes an **AI-Agent driven search engine**:
 The architecture of HighGrowthJobs follows the **Hexagonal Core** pattern.
 1.  **Alignment:** Every database change in `models.py` MUST be reflected in the API contract.
 2.  **Consistency:** Adhere strictly to the **Dual-Speed Orchestration** pattern (Accelerator for UI events + Janitor for background scraping).
-3.  **Source Control:** DO NOT automatically commit or push code. Every commit and push must be explicitly requested and approved by the USER.
+3.  **Source Control (Zero-Trust Git Protocol):** 
+    *   **NO AUTO-PUSH:** The agent MUST NOT run `git push` or `git commit` inside a multi-tool execution bundle. Commits and Pushes must be their own separate user turns.
+    *   **MANDATORY PAUSE:** After running `uv run scripts/ai_pre_commit.py`, the agent MUST immediately stop and present the findings. It must WAIT for the USER to explicitly say "Proceed" before suggesting or executing a commit.
+    *   **NO BYPASS:** The use of `--no-verify` is strictly prohibited unless specifically requested by the USER for a unique edge case.
 4.  **AI Code Review:** ALWAYS run the AI pre-commit code review and **PAUSE to present the full findings** (suggestions/warnings) to the USER before committing. The USER MUST approve the code review outcome before the commit proceeds. If the review returns 'FAIL', the agent MUST address the [CRITICAL] items before requesting approval again.
 
 ## Agent Operational Workflow (Chain of Command)
