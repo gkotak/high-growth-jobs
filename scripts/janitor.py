@@ -12,28 +12,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.app.services.janitor import JanitorService
 from src.app.core.database import engine
 from src.data_model.models import Company
+from src.app.core.logging_setup import setup_logger
 
-from logging.handlers import RotatingFileHandler
-
-# Configure logging with both Console and Truncating File outputs
-log_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-
-# 1. Console Output (What Railway catches in real-time)
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(log_formatter)
-
-# 2. File Output (Rotating logs to prevent disk bloat: 5MB max, 3 backups)
-os.makedirs("logs", exist_ok=True)
-file_handler = RotatingFileHandler(
-    "logs/janitor.log", maxBytes=5 * 1024 * 1024, backupCount=3
-)
-file_handler.setFormatter(log_formatter)
-
-logging.basicConfig(
-    level=logging.INFO, # Change to DEBUG if you need extreme detail
-    handlers=[console_handler, file_handler]
-)
-logger = logging.getLogger("JanitorOrchestrator")
+logger = setup_logger("JanitorOrchestrator", "logs/janitor.log")
 
 load_dotenv()
 

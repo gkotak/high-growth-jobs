@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from playwright.sync_api import sync_playwright
 from playwright_stealth import Stealth
 from typing import List, Optional
+import hashlib
 from src.app.ports.job_ingest import JobIngestPort
 from src.data_model.models import Job
 import logging
@@ -42,7 +43,6 @@ class MultipassScraperAdapter(JobIngestPort):
         
         Returns: (List[Job], new_hash)
         """
-        import hashlib
         logger.info(f"Multipass: Starting Tier 3 for {website_url}")
         
         # --- PHASE 1: STATIC BS4 + HASH CHECK ---

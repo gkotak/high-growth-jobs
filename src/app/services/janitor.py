@@ -96,5 +96,5 @@ class JanitorService:
                 session.add(db_job)
                 stale_count += 1
 
-        session.commit()
+        session.flush() # Let the outer loop commit to maintain atomicity
         logger.info(f"Done with {company.name}. New: {new_count}, Closed: {stale_count}")
