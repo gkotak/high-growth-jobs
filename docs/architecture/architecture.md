@@ -7,6 +7,8 @@
 ## Architecture Documentation Index
 *   **[Current Implementation State](./current_state.md):** The "You Are Here" map of the codebase.
 *   **[High-Level Data Flow](./data_flow_diagram.md):** A Mermaid diagram showing the interaction between external inputs (Adapters), the Core Engine, and the UI.
+*   **[Scraping Strategy](./scraping_strategy.md):** The Multi-Level Hierarchy and background Daemon orchestration for ingesting job data.
+*   **[Logging Strategy](./logging_strategy.md):** The centralized, Dual-Output architecture for monitoring background agents and web processes.
 *   **[Data Model Overview (HTML)](./data_model/index.html):** A visual map of the entities, their relationships, and the Medallion architecture layers.
 *   **[Full Entity Model (SQLModel Source Code)](../../src/data_model/models.py):** The technical source of truth for all database entities, types, and relationships.
 *   **[HighGrowthJobs API Design Submodule](./submodules/api.md):** The RESTful API contract between the React Discovery UI and the FastAPI Core (Updated to reflect the UI prototype's data structures, including computed statuses and line items).
