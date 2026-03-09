@@ -69,6 +69,9 @@ class CompanyBase(SQLModel):
     estimated_revenue_range: Optional[str] = None
     cb_rank: Optional[int] = None
 
+    # Performance Tracking
+    last_content_hash: Optional[str] = None
+
 class Company(CompanyBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     tenant_id: UUID = Field(foreign_key="tenant.id", index=True)

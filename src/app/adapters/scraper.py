@@ -33,23 +33,35 @@ class MultipassScraperAdapter(JobIngestPort):
             mode=instructor.Mode.GEMINI_JSON,
         )
 
-    def scrape_jobs(self, company_id: str, website_url: str) -> List[Job]:
+    def scrape_jobs(self, company_id: str, website_url: str, current_hash: Optional[str] = None) -> tuple[List[Job], Optional[str]]:
         """
         Implementation of the Multipass Scraping strategy:
-        1. Static BS4 (Cheap/Fast)
+        1. Static BS4 (Cheap/Fast) + Hash Check
         2. AI Link Hopping (BS4 on Career page)
         3. Playwright (Final Fallback)
+        
+        Returns: (List[Job], new_hash)
         """
+        import hashlib
         logger.info(f"Multipass: Starting Tier 3 for {website_url}")
         
-        # --- PHASE 1: STATIC BS4 ---
+        # --- PHASE 1: STATIC BS4 + HASH CHECK ---
         html = self._static_scrape(website_url)
         if html and not self._is_javascript_wall(html):
+            # Compute a hash of the visible text to detect changes
+            soup = BeautifulSoup(html, "html.parser")
+            visible_text = soup.get_text(separator=" ", strip=True)
+            new_hash = hashlib.sha256(visible_text.encode('utf-8')).hexdigest()
+
+            if current_hash and new_hash == current_hash:
+                logger.info(f"⏭️ Smart Skip: Content hash matches for {website_url}. No changes detected.")
+                return [], new_hash
+
             # Check if jobs are already here
             jobs = self._extract_jobs_with_llm(html, company_id, website_url)
             if jobs:
                 logger.info(f"Success: Found {len(jobs)} jobs via static scrape of {website_url}")
-                return jobs
+                return jobs, new_hash
             
             # --- PHASE 2: AI LINK HOPPING (STATIC) ---
             logger.info("Jobs not found on landing page. Attempting AI link detection...")
@@ -62,19 +74,28 @@ class MultipassScraperAdapter(JobIngestPort):
                     jobs = self._extract_jobs_with_llm(career_html, company_id, career_link)
                     if jobs:
                         logger.info(f"Success: Found {len(jobs)} jobs via link-hop to {career_link}")
-                        return jobs
+                        return jobs, new_hash
 
         # --- PHASE 3: PLAYWRIGHT (THE HAMMER) ---
         logger.info(f"Static methods failed for {website_url}. Falling back to Playwright...")
         browser_html = self._browser_scrape(website_url)
         if browser_html:
+            # Re-compute hash from browser content for custom sites
+            browser_soup = BeautifulSoup(browser_html, "html.parser")
+            browser_text = browser_soup.get_text(separator=" ", strip=True)
+            new_hash = hashlib.sha256(browser_text.encode('utf-8')).hexdigest()
+            
+            if current_hash and new_hash == current_hash:
+                logger.info(f"⏭️ Smart Skip: Browser content hash matches for {website_url}.")
+                return [], new_hash
+
             jobs = self._extract_jobs_with_llm(browser_html, company_id, website_url)
             if jobs:
                 logger.info(f"Success: Found {len(jobs)} jobs via Playwright for {website_url}")
-                return jobs
+                return jobs, new_hash
 
         logger.warning(f"All Multipass Tiers failed for {website_url}")
-        return []
+        return [], None
 
     def _detect_career_link(self, html: str, url: str) -> Optional[str]:
         """Uses AI to find a 'Careers' link from a static HTML snippet."""

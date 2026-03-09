@@ -55,10 +55,19 @@ class JanitorService:
     def _process_company(self, session: Session, company: Company):
         logger.info(f"Cleaning/Syncing {company.name}...")
         
-        # A. Trigger Scraper
-        scraped_jobs = self.orchestrator.run_for_company(company)
+        # A. Trigger Scraper (Pass hash for Smart Skip)
+        scraped_jobs, new_hash = self.orchestrator.run_for_company(company, current_hash=company.last_content_hash)
+        
+        # Update hash regardless of whether jobs were found (to track the check)
+        if new_hash:
+            company.last_content_hash = new_hash
+            session.add(company)
+            session.flush()
+
         if not scraped_jobs:
-            logger.warning(f"No jobs found for {company.name}. Skipping diff.")
+            # If we didn't get jobs, it might be because of a Smart Skip
+            # In that case, we don't want to close existing jobs!
+            logger.info(f"No new jobs or skip detected for {company.name}.")
             return
 
         # B. Get existing ACTIVE jobs from DB
