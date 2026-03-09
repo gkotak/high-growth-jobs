@@ -11,7 +11,7 @@ from sqlmodel import Session, select, SQLModel, func, and_
 from sqlalchemy.orm import selectinload
 
 from src.app.core.database import get_session
-from src.data_model.models import Company, Job, JobBase, CompanyBase
+from src.data_model.models import Company, Job, JobBase, CompanyBase, JobDetails, JobDetailsBase, VCFirm
 from src.app.core.logging_setup import setup_logger
 
 # Configure logging for the API (Use LOG_LEVEL env var, default to INFO)
@@ -50,6 +50,14 @@ class JobResponse(JobBase):
     id: UUID
     company: CompanyResponse
 
+class JobDetailsResponse(JobDetailsBase):
+    pass
+
+class FullJobResponse(JobBase):
+    id: UUID
+    company: CompanyResponse
+    details: Optional[JobDetailsResponse] = None
+
 class JobPaginationMeta(SQLModel):
     total_count: int
     page: int
@@ -82,6 +90,29 @@ async def get_companies(session: Session = Depends(get_session)):
         return companies
     except Exception as e:
         logger.exception("Final trace for Fetch Companies operation failure:")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/jobs/{job_id}", response_model=FullJobResponse)
+async def get_job_by_id(job_id: UUID, session: Session = Depends(get_session)):
+    """
+    Fetches a single active job along with its associated company, VC firms, and deep-scrape details.
+    """
+    try:
+        stmt = select(Job).join(Company).options(
+            selectinload(Job.company).selectinload(Company.vc_firms),
+            selectinload(Job.details)
+        ).where(Job.id == job_id).where(Job.status == "active")
+        
+        job = session.exec(stmt).first()
+        if not job:
+            logger.info(f"Job {job_id} not found or inactive.")
+            raise HTTPException(status_code=404, detail="Job not found")
+            
+        return job
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Unexpected error fetching job id={job_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/jobs", response_model=PaginatedJobResponse)

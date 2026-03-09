@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import SignalBadge from "@/components/SignalBadge";
 import { formatFunding, sortInvestors, formatFounded } from "@/data/mockJobs";
-import { useJobs } from "@/hooks/useJobs";
+import { useJob } from "@/hooks/useJobs";
 import { Button } from "@/components/ui/button";
 import GlassdoorRating from "@/components/GlassdoorRating";
 
@@ -49,8 +49,7 @@ const TwitterIcon = ({ className }: { className?: string }) => (
 const JobDetail = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
-  const { data: jobs = [], isLoading } = useJobs();
-  const job = jobs.find((j) => j.id === jobId);
+  const { data: job, isLoading } = useJob(jobId);
 
   if (isLoading) {
     return (
@@ -225,9 +224,25 @@ const JobDetail = () => {
           </div>
 
           {/* Description */}
-          <div className="mt-6 rounded-lg border border-border bg-card p-5 sm:p-8">
-            <h2 className="text-base font-semibold text-foreground">About this role</h2>
-            <div className="mt-4">{renderDescription(job.description)}</div>
+          <div className="mt-6 rounded-lg border border-border bg-card p-5 sm:p-8 flex flex-col gap-8">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">About this role</h2>
+              <div className="mt-4">{renderDescription(job.extractedDescription || job.description)}</div>
+            </div>
+
+            {job.extractedRequirements && (
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Requirements</h2>
+                <div className="mt-4">{renderDescription(job.extractedRequirements)}</div>
+              </div>
+            )}
+
+            {job.extractedBenefits && (
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Benefits</h2>
+                <div className="mt-4">{renderDescription(job.extractedBenefits)}</div>
+              </div>
+            )}
           </div>
 
           {/* Company info */}

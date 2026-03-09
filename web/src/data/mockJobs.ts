@@ -12,6 +12,9 @@ export type Job = {
   skills: string[];
   signals: Signal[];
   description: string;
+  extractedDescription?: string;
+  extractedRequirements?: string;
+  extractedBenefits?: string;
 };
 
 export type Signal = {
