@@ -18,16 +18,13 @@ dependencies = [
     "python-dateutil>=2.9.0.post0",
     "sqlmodel>=0.0.37",
     "uvicorn>=0.41.0",
+    "beautifulsoup4>=4.12.3",
+    "lxml>=5.1.0",
+    "playwright==1.48.0",
+    "playwright-stealth>=1.0.6",
 ]
 
 [project.optional-dependencies]
-scrapers = [
-    "beautifulsoup4>=4.14.3",
-    "bs4>=0.0.2",
-    "lxml>=6.0.2",
-    "playwright>=1.58.0",
-    "playwright-stealth>=2.0.2",
-]
 dev = [
     "pre-commit>=4.5.1",
 ]

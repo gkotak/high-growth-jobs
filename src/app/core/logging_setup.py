@@ -1,6 +1,11 @@
 import os
 import logging
+import warnings
 from logging.handlers import RotatingFileHandler
+
+# Muffle persistent deprecation warnings from instructor/generativeai that clutter Railway logs
+warnings.filterwarnings("ignore", category=FutureWarning, module="instructor.providers.gemini.client")
+warnings.filterwarnings("ignore", category=FutureWarning, message=".*google.generativeai.*")
 
 def setup_logger(name: str, log_file: str = "logs/app.log", level: int = logging.INFO) -> logging.Logger:
     """Configures and returns a logger with both console and rotating file output."""

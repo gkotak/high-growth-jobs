@@ -11,15 +11,17 @@ RUN pip install uv
 # Copy the lockfile and project file
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies from the scraper extra
-# This matches the [project.optional-dependencies] section in pyproject.toml
-RUN uv sync --frozen --extra scrapers
+# Add the virtualenv's bin directory to the PATH so we can run scripts easily
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Install all project dependencies (now including scrapers)
+RUN uv sync --frozen
 
 # Copy the rest of the application
 COPY . .
 
-# Set environment variables
+# Set more environment variables
 ENV PYTHONUNBUFFERED=1
 
 # The command to run the janitor loop
-CMD ["uv", "run", "scripts/janitor.py"]
+CMD ["python", "scripts/janitor.py"]
