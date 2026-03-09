@@ -2,7 +2,6 @@ import os
 import httpx
 import asyncio
 import instructor
-import google.generativeai as genai
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 from playwright.async_api import async_playwright
@@ -11,6 +10,8 @@ from typing import List, Optional, Tuple
 import hashlib
 from src.app.ports.job_ingest import JobIngestPort
 from src.data_model.models import Job
+from src.app.core.observability import init_langfuse
+from src.app.core.llm import get_scraper_client
 import logging
 
 logger = logging.getLogger(__name__)
@@ -36,13 +37,11 @@ class ExtractedJobDetails(BaseModel):
 
 class MultipassScraperAdapter(JobIngestPort):
     def __init__(self):
-        if os.getenv("GEMINI_API_KEY"):
-            genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        # Initialize Langfuse tracing BEFORE any LLM calls
+        init_langfuse()
         
-        self.client = instructor.from_gemini(
-            client=genai.GenerativeModel(model_name="gemini-2.5-flash"),
-            mode=instructor.Mode.GEMINI_JSON,
-        )
+        # Get the instructor client + model from the centralized LLM Registry
+        self.client, self.model = get_scraper_client()
 
     async def scrape_jobs(self, company_id: str, website_url: str, current_hash: Optional[str] = None) -> Tuple[List[Job], Optional[str]]:
         """
@@ -129,8 +128,9 @@ class MultipassScraperAdapter(JobIngestPort):
         try:
             from src.app.core.prompts import DEEP_SCRAPE_JOB_DETAILS_SYSTEM, DEEP_SCRAPE_JOB_DETAILS_USER
             
-            def _ask_gemini_parse():
+            def _ask_llm_parse():
                 return self.client.chat.completions.create(
+                    model=self.model,
                     messages=[
                         {
                             "role": "system",
@@ -144,8 +144,8 @@ class MultipassScraperAdapter(JobIngestPort):
                     response_model=ExtractedJobDetails,
                 )
                 
-            response = await asyncio.to_thread(_ask_gemini_parse)
-            logger.info("Gemini parsed job details successfully.")
+            response = await asyncio.to_thread(_ask_llm_parse)
+            logger.info("LLM parsed job details successfully.")
             return response
             
         except Exception as e:
@@ -167,13 +167,14 @@ class MultipassScraperAdapter(JobIngestPort):
             prompt = MULTIPASS_LINK_DETECTION_PROMPT.format(url=url, text=links_context)
             
             # Using asyncio.to_thread because instructor's client call is synchronous here
-            def _ask_gemini():
+            def _ask_llm_link():
                 return self.client.chat.completions.create(
+                    model=self.model,
                     messages=[{"role": "user", "content": prompt}],
                     response_model=LinkDetection,
                 )
             
-            result = await asyncio.to_thread(_ask_gemini)
+            result = await asyncio.to_thread(_ask_llm_link)
 
             if result.status == "ALREADY_ON_JOBS_PAGE":
                 return None
@@ -249,13 +250,14 @@ class MultipassScraperAdapter(JobIngestPort):
             from src.app.core.prompts import MULTIPASS_NAVIGATION_PROMPT
             prompt = MULTIPASS_NAVIGATION_PROMPT.format(elements=elements)
             
-            def _ask_gemini_nav():
+            def _ask_llm_nav():
                 return self.client.chat.completions.create(
+                    model=self.model,
                     messages=[{"role": "user", "content": prompt}],
                     response_model=NavigationAction,
                 )
             
-            action = await asyncio.to_thread(_ask_gemini_nav)
+            action = await asyncio.to_thread(_ask_llm_nav)
 
             if action.element_text.upper() != "NONE":
                 logger.info(f"Agentic Nav: Clicking '{action.element_text}' because {action.reason}")
@@ -289,13 +291,14 @@ class MultipassScraperAdapter(JobIngestPort):
             logger.warning(f"Extracted text is very short ({len(clean_text)} chars). Site might be blocking or empty.")
             clean_text = str(soup.body)[:20000]
 
-        logger.info(f"Sending {len(clean_text[:15000])} characters to Gemini for extraction...")
+        logger.info(f"Sending {len(clean_text[:15000])} characters to LLM for extraction...")
 
         try:
             from src.app.core.prompts import MULTIPASS_JOB_EXTRACTION_SYSTEM, MULTIPASS_JOB_EXTRACTION_USER
             
-            def _ask_gemini_extract():
+            def _ask_llm_extract():
                 return self.client.chat.completions.create(
+                    model=self.model,
                     messages=[
                         {
                             "role": "system",
@@ -309,7 +312,7 @@ class MultipassScraperAdapter(JobIngestPort):
                     response_model=JobList,
                 )
                 
-            response = await asyncio.to_thread(_ask_gemini_extract)
+            response = await asyncio.to_thread(_ask_llm_extract)
 
             result_jobs = []
             for ext in response.jobs:
@@ -323,7 +326,7 @@ class MultipassScraperAdapter(JobIngestPort):
                     needs_deep_scrape=True,
                 ))
             
-            logger.info(f"Gemini extracted {len(result_jobs)} jobs.")
+            logger.info(f"LLM extracted {len(result_jobs)} jobs.")
             return result_jobs
             
         except Exception as e:

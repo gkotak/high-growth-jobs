@@ -7,8 +7,6 @@ requires-python = ">=3.11"
 dependencies = [
     "alembic>=1.18.4",
     "fastapi>=0.135.1",
-    "google-genai>=1.66.0",
-    "google-generativeai>=0.8.6",
     "httpx>=0.28.1",
     "instructor>=1.14.5",
     "openai>=2.26.0",
@@ -22,6 +20,8 @@ dependencies = [
     "lxml>=5.1.0",
     "playwright==1.48.0",
     "playwright-stealth>=1.0.6",
+    "langfuse>=2.0.0",
+    "opentelemetry-instrumentation-openai>=0.0.1",
 ]
 
 [project.optional-dependencies]
