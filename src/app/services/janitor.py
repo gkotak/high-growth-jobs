@@ -1,5 +1,6 @@
-from datetime import datetime
+import os
 import logging
+from datetime import datetime, timedelta
 from typing import List, Set
 from sqlmodel import Session, select
 from src.app.core.orchestrator import MarketScraperOrchestrator
@@ -12,20 +13,33 @@ class JanitorService:
     def __init__(self):
         self.orchestrator = MarketScraperOrchestrator()
 
-    def cleanup_and_sync(self):
+    def cleanup_and_sync(self, limit: int = 100):
         """
         The main Janitor loop:
-        1. Find companies to scrape
+        1. Find companies to scrape (sorted by growth signals)
         2. Run scraper
         3. Diff jobs vs DB
         4. Update status
         """
+        # Pull from environment with defensive parsing
+        try:
+            run_limit = int(os.getenv("JANITOR_LIMIT", str(limit)))
+        except ValueError:
+            run_limit = limit
+
+        stale_threshold = datetime.utcnow() - timedelta(days=7) # Only re-scrape every 7 days
+
         with Session(engine) as session:
-            # 1. Get all companies (in V2 we based this on last_scraped_at)
-            statement = select(Company)
+            # 1. Get companies (Prioritize newest funding first)
+            statement = (
+                select(Company)
+                .where((Company.last_scraped_at.is_(None)) | (Company.last_scraped_at < stale_threshold))
+                .order_by(Company.last_funding_date.desc(), Company.cb_rank.asc())
+                .limit(run_limit)
+            )
             companies = session.exec(statement).all()
             
-            logger.info(f"Janitor starting sync for {len(companies)} companies")
+            logger.info(f"Janitor starting sync for {len(companies)} priority companies (Limit: {run_limit})")
 
             for company in companies:
                 try:
