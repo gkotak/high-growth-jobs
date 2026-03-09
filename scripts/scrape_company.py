@@ -12,7 +12,7 @@ from src.data_model.models import Company
 from src.app.services.janitor import JanitorService
 from src.app.core.logging_setup import setup_logger
 
-logger = setup_logger("ManualScraper", "logs/janitor.log")
+logger = setup_logger("ManualScraper")
 
 def scrape_single_company(identifier: str):
     """

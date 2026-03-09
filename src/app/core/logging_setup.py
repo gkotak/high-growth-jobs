@@ -6,13 +6,11 @@ def setup_logger(name: str, log_file: str = "logs/app.log", level: int = logging
     """Configures and returns a logger with both console and rotating file output."""
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     
-    # We configure the ROOT logger so that all module-level inner loggers 
-    # (like src.app.adapters.scraper) automatically inherit these file handlers.
-    root_logger = logging.getLogger()
-    root_logger.setLevel(level)
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
     
     # Avoid adding handlers multiple times if already configured
-    if not root_logger.handlers:
+    if not logger.handlers:
         log_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
         # Console Output
@@ -25,11 +23,7 @@ def setup_logger(name: str, log_file: str = "logs/app.log", level: int = logging
         )
         file_handler.setFormatter(log_formatter)
 
-        root_logger.addHandler(console_handler)
-        root_logger.addHandler(file_handler)
-    
-    # Return the specific named logger requested (it will inherit the root handlers)
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
+        logger.addHandler(console_handler)
+        logger.addHandler(file_handler)
     
     return logger

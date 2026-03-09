@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,7 +15,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 6%;
 
-    --primary: 43 96% 42%;
+    --primary: 45 96% 53%;
     --primary-foreground: 240 10% 6%;
 
     --secondary: 45 30% 96%;
@@ -24,7 +24,7 @@
     --muted: 45 10% 96%;
     --muted-foreground: 240 5% 46%;
 
-    --accent: 43 96% 42%;
+    --accent: 45 96% 53%;
     --accent-foreground: 240 10% 6%;
 
     --destructive: 0 84% 60%;
@@ -39,7 +39,7 @@
     --signal-tier1: 142 71% 45%;
     --signal-series: 217 91% 60%;
     --signal-remote: 262 83% 58%;
-    --signal-funding: 43 96% 42%;
+    --signal-funding: 45 96% 53%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -89,7 +89,7 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
