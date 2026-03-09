@@ -16,10 +16,10 @@ class JanitorService:
     def cleanup_and_sync(self, limit: int = 100):
         """
         The main Janitor loop:
-        1. Find companies to scrape (sorted by growth signals)
-        2. Run scraper
-        3. Diff jobs vs DB
-        4. Update status
+        1. Find companies to scrape (sorted by cb_rank)
+        2. Run scraper for each company
+        3. Diff jobs vs DB (add new, close stale)
+        4. Update last_scraped_at status
         """
         # Pull from environment with defensive parsing
         try:
@@ -30,11 +30,11 @@ class JanitorService:
         stale_threshold = datetime.utcnow() - timedelta(days=7) # Only re-scrape every 7 days
 
         with Session(engine) as session:
-            # 1. Get companies (Prioritize newest funding first)
+            # 1. Get companies (Prioritize top tier startups by cb_rank)
             statement = (
                 select(Company)
                 .where((Company.last_scraped_at.is_(None)) | (Company.last_scraped_at < stale_threshold))
-                .order_by(Company.last_funding_date.desc(), Company.cb_rank.asc())
+                .order_by(Company.cb_rank.asc())
                 .limit(run_limit)
             )
             companies = session.exec(statement).all()
