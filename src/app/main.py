@@ -88,43 +88,57 @@ async def get_jobs(
     Fetches active high-growth jobs with eager-loaded company and VC firm data.
     Supports server-side pagination, filtering, and PostgreSQL full-text search.
     """
+    # Debug logging
+    print(f"--- API Search Request: search='{search}', page={page}, roles={roleType}, remote={remote}, stage={fundingStage} ---")
+
     try:
         # 1. Base query with eager loading
         stmt = select(Job).join(Company).options(
             selectinload(Job.company).selectinload(Company.vc_firms)
         ).where(Job.status == "active")
 
-        # 2. Apply Full-Text Search if provided
-        # We search across Job titles and Company names
-        if search:
-            search_query = func.websearch_to_tsquery('english', search)
-            # Combine title and company name for the search vector
-            search_vector = func.setweight(func.to_tsvector('english', Job.title), 'A') + \
-                            func.setweight(func.to_tsvector('english', Company.name), 'A')
+        # 2. Apply Search if provided (Full Text + ILIKE combination)
+        if search and search.strip():
+            s = search.strip()
+            # websearch_to_tsquery handles double quotes and operators nicely
+            search_query = func.websearch_to_tsquery('english', s)
+            # combine title and company into one searchable field
+            combined_text = func.coalesce(Job.title, '') + ' ' + func.coalesce(Company.name, '')
+            search_vector = func.to_tsvector('english', combined_text)
             
-            stmt = stmt.where(search_vector.op('@@')(search_query))
-            # Sort by rank
-            stmt = stmt.order_by(func.ts_rank(search_vector, search_query).desc())
+            # Use ILIKE as a direct fallback for substring matching (fixes 'soft' vs 'software')
+            search_pattern = f"%{s}%"
+            stmt = stmt.where(
+                (Job.title.ilike(search_pattern)) | 
+                (Company.name.ilike(search_pattern)) |
+                (search_vector.op('@@')(search_query))
+            )
+            
+            # Sort relevant matches first if possible, or just by date
+            stmt = stmt.order_by(Job.created_at.desc())
         else:
             # Default sort by date
             stmt = stmt.order_by(Job.created_at.desc())
 
         # 3. Apply Filters
-        if roleType:
-            # Map frontend role types to functional_area or department
+        if roleType and len(roleType) > 0:
             stmt = stmt.where(Job.functional_area.in_(roleType))
         
-        if remote:
-            # Map 'Remote' vs 'On-site' to boolean
+        if remote and len(remote) > 0:
             is_remote_filter = "Remote" in remote
-            if len(remote) == 1: # Only filtered for one or the other
+            if len(remote) == 1:
                  stmt = stmt.where(Job.is_remote == is_remote_filter)
 
-        if fundingStage:
-            # Stage names like 'Series A', 'Seed' etc
+        if fundingStage and len(fundingStage) > 0:
             stmt = stmt.where(Company.stage.in_(fundingStage))
+            
+        if investorTier:
+            # Placeholder/Stub: Assuming we filter for Tier 1 VCs
+            # Note: This logic depends on your VCFirm tier classification
+            stmt = stmt.join(Company.vc_firms).where(VCFirm.tier == "Tier 1")
 
         # 4. Count total matching rows (before pagination)
+        # Use a CTE for cleaner count logic on complex queries
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total_count = session.exec(count_stmt).one()
 
