@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Header from "@/components/Header";
 import CompanySheet from "@/components/CompanySheet";
 import { useJobs } from "@/hooks/useJobs";
@@ -8,8 +8,15 @@ import FilterSection from "@/widgets/landing/FilterSection";
 import ControlBar from "@/widgets/landing/ControlBar";
 import JobListSection from "@/widgets/landing/JobListSection";
 import { FilterState } from "@/widgets/landing/types";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const Index = () => {
   const [search, setSearch] = useState("");
@@ -22,21 +29,22 @@ const Index = () => {
     fundingStage: [],
     investorTier: false,
   });
+  const [page, setPage] = useState(1);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
   const {
     data,
-    isLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  } = useJobs(debouncedSearch, filters);
+    isLoading
+  } = useJobs(debouncedSearch, filters, page);
 
-  const allJobs = useMemo(() => {
-    return data?.pages.flatMap((page) => page.data) ?? [];
-  }, [data]);
+  // Reset to page 1 when search or filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, filters]);
 
-  const totalCount = data?.pages[0]?.meta.total_count ?? 0;
+  const allJobs = data?.data ?? [];
+  const totalCount = data?.meta.total_count ?? 0;
+  const totalPages = Math.ceil(totalCount / 50);
 
   const activeFilterCount = useMemo(() => {
     return (
@@ -51,6 +59,51 @@ const Index = () => {
   const selectedCompany = selectedCompanyId
     ? allJobs.find((j) => j.company.id === selectedCompanyId)?.company ?? null
     : null;
+
+  const renderPaginationItems = () => {
+    const items = [];
+    const maxVisiblePages = 5;
+
+    let startPage = Math.max(1, page - 2);
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    if (startPage > 1) {
+      items.push(
+        <PaginationItem key="1">
+          <PaginationLink onClick={() => setPage(1)}>1</PaginationLink>
+        </PaginationItem>
+      );
+      if (startPage > 2) items.push(<PaginationEllipsis key="e1" />);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            onClick={() => setPage(i)}
+            isActive={page === i}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) items.push(<PaginationEllipsis key="e2" />);
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink onClick={() => setPage(totalPages)}>{totalPages}</PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return items;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,23 +136,27 @@ const Index = () => {
               onCompanyClick={setSelectedCompanyId}
             />
 
-            {hasNextPage && (
-              <div className="mt-8 flex justify-center pb-10">
-                <Button
-                  variant="outline"
-                  onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
-                  className="w-full sm:w-auto h-12 px-8 font-medium border-border/60 bg-muted/30 hover:bg-muted/50 transition-colors"
-                >
-                  {isFetchingNextPage ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Loading more...
-                    </>
-                  ) : (
-                    "Load more roles"
-                  )}
-                </Button>
+            {totalPages > 1 && (
+              <div className="mt-12 flex justify-center pb-10">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+
+                    {renderPaginationItems()}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               </div>
             )}
           </main>

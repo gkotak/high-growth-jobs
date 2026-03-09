@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Job, Company, Signal } from '../data/mockJobs';
 import { FilterState } from '../widgets/landing/types';
 
@@ -13,12 +13,12 @@ const FUNDING_STAGE_MAP: Record<string, string[]> = {
     "Series E+": ["Series E", "Series F", "Series G", "Series H", "Series I"],
 };
 
-export function useJobs(search: string = "", filters: FilterState) {
-    return useInfiniteQuery({
-        queryKey: ['jobs', search, filters],
-        queryFn: async ({ pageParam = 1 }): Promise<{ data: Job[], meta: any }> => {
+export function useJobs(search: string = "", filters: FilterState, page: number = 1) {
+    return useQuery({
+        queryKey: ['jobs', search, filters, page],
+        queryFn: async (): Promise<{ data: Job[], meta: any }> => {
             const params = new URLSearchParams();
-            params.append('page', pageParam.toString());
+            params.append('page', page.toString());
             params.append('limit', '50');
 
             if (search) params.append('search', search);
@@ -93,12 +93,5 @@ export function useJobs(search: string = "", filters: FilterState) {
                 meta: result.meta
             };
         },
-        getNextPageParam: (lastPage) => {
-            if (lastPage.meta.has_next) {
-                return lastPage.meta.page + 1;
-            }
-            return undefined;
-        },
-        initialPageParam: 1,
     });
 }
