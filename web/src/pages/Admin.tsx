@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCcw, Search, BarChart3, Building2, Briefcase, Zap, AlertCircle, ExternalLink } from 'lucide-react';
+import { RefreshCcw, Search, BarChart3, Building2, Briefcase, Zap, AlertCircle, ExternalLink, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Header from '@/components/Header';
 
@@ -83,6 +83,18 @@ const AdminPage = () => {
 
   const handleForceEnrich = (id: string) => {
     forceEnrich.mutate(id);
+  };
+
+  const clearCompanySearch = () => {
+    setCompanySearchInput('');
+    setCompanySearch('');
+    setCompanyPage(1);
+  };
+
+  const clearJobSearch = () => {
+    setJobSearchInput('');
+    setJobSearch('');
+    setJobPage(1);
   };
 
   const toggleSort = (field: string) => {
@@ -180,12 +192,12 @@ const AdminPage = () => {
                       <CardTitle>Portfolio Companies</CardTitle>
                       <CardDescription>Monitor and trigger primary discovery scrapes for tracked companies.</CardDescription>
                     </div>
-                    <div className="flex gap-2 w-full md:w-auto">
-                      <div className="relative w-full md:w-72">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
+                    <div className="flex w-full md:w-80 h-9 items-center rounded-md border border-white/10 bg-white/5 focus-within:border-white/20 transition-all overflow-hidden">
+                      <div className="flex items-center flex-1 px-3">
+                        <Search className="h-4 w-4 text-muted-foreground mr-2 shrink-0" />
+                        <input 
                           placeholder="Search companies..." 
-                          className="pl-9 bg-white/5 border-white/10"
+                          className="w-full bg-transparent border-none text-sm focus:outline-none placeholder:text-muted-foreground"
                           value={companySearchInput}
                           onChange={(e) => setCompanySearchInput(e.target.value)}
                           onKeyDown={(e) => {
@@ -195,18 +207,25 @@ const AdminPage = () => {
                             }
                           }}
                         />
+                        {companySearchInput && (
+                          <button 
+                            onClick={clearCompanySearch}
+                            className="p-1 hover:bg-white/10 rounded-full transition-colors ml-1"
+                          >
+                            <X className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        )}
                       </div>
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        className="bg-white/10 hover:bg-white/20 px-3"
+                      <div className="h-full w-px bg-white/10" />
+                      <button 
+                        className="px-3 h-full hover:bg-white/10 transition-colors flex items-center justify-center shrink-0"
                         onClick={() => {
                           setCompanySearch(companySearchInput);
                           setCompanyPage(1);
                         }}
                       >
-                        <Search className="h-4 w-4" />
-                      </Button>
+                        <Search className="h-4 w-4 text-muted-foreground" />
+                      </button>
                     </div>
                   </div>
                 </CardHeader>
@@ -318,12 +337,12 @@ const AdminPage = () => {
                       <CardTitle>Global Job Audit</CardTitle>
                       <CardDescription>Review listing status and trigger Phase 2 AI enrichment.</CardDescription>
                     </div>
-                    <div className="flex gap-2 w-full md:w-auto">
-                      <div className="relative w-full md:w-72">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
+                    <div className="flex w-full md:w-80 h-9 items-center rounded-md border border-white/10 bg-white/5 focus-within:border-white/20 transition-all overflow-hidden">
+                      <div className="flex items-center flex-1 px-3">
+                        <Search className="h-4 w-4 text-muted-foreground mr-2 shrink-0" />
+                        <input 
                           placeholder="Search jobs or companies..." 
-                          className="pl-9 bg-white/5 border-white/10"
+                          className="w-full bg-transparent border-none text-sm focus:outline-none placeholder:text-muted-foreground"
                           value={jobSearchInput}
                           onChange={(e) => setJobSearchInput(e.target.value)}
                           onKeyDown={(e) => {
@@ -333,18 +352,25 @@ const AdminPage = () => {
                             }
                           }}
                         />
+                        {jobSearchInput && (
+                          <button 
+                            onClick={clearJobSearch}
+                            className="p-1 hover:bg-white/10 rounded-full transition-colors ml-1"
+                          >
+                            <X className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                        )}
                       </div>
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        className="bg-white/10 hover:bg-white/20 px-3"
+                      <div className="h-full w-px bg-white/10" />
+                      <button 
+                        className="px-3 h-full hover:bg-white/10 transition-colors flex items-center justify-center shrink-0"
                         onClick={() => {
                           setJobSearch(jobSearchInput);
                           setJobPage(1);
                         }}
                       >
-                        <Search className="h-4 w-4" />
-                      </Button>
+                        <Search className="h-4 w-4 text-muted-foreground" />
+                      </button>
                     </div>
                   </div>
                 </CardHeader>
