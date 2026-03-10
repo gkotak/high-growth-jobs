@@ -28,6 +28,13 @@ The system explicitly avoids direct browser-to-database communication (e.g., dir
 - **Optimization**: Pre-baked with Google Chrome/Playwright binaries to avoid cold-start delays in scraping.
 - **Capability**: No timeout; can run for hours if processing massive job boards.
 
+### C. Daily Ingestion Cron (Railway Cron)
+- **Role**: Daily discovery of new venture-backed companies.
+- **Trigger**: Every day at 3 PM UK (15:00 UTC).
+- **Command**: `python scripts/ingest_axios_prorata.py latest`
+- **Schedule**: `0 15 * * *`
+- **Service Type**: Dedicated Railway "Cron Job" service.
+
 ## 4. Environment Checklist for Engineers
 | Key | Type | Audience | Use Case |
 | :--- | :--- | :--- | :--- |
