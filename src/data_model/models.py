@@ -86,18 +86,19 @@ class Company(CompanyBase, table=True):
     vc_firms: List[VCFirm] = Relationship(back_populates="companies", link_model=CompanyVCFirmLink)
 
 class JobBase(SQLModel):
+    # Raw Data (stored as found on site)
     title: str = Field(index=True)
     location: str
     department: Optional[str] = None
     job_url: str
     salary_range: Optional[str] = None
-    experience_level: Optional[str] = None # Junior, Mid, Senior, etc.
+    
+    # Normalized/AI Enrichment Data
+    experience_level: Optional[str] = None  # Standardized: Intern, Entry, Mid, Senior, Lead, Staff, Director, Executive
     is_remote: bool = False
     
-    # AI Normalization
-    normalized_title: Optional[str] = None
-    normalized_seniority: Optional[str] = None
-    functional_area: Optional[str] = None
+    normalized_title: Optional[str] = None  # Cleaned title (e.g. 'Senior Software Engineer')
+    functional_area: Optional[str] = None   # Category (e.g. Engineering, Product, Sales)
 
 class Job(JobBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)

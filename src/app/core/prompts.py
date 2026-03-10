@@ -60,6 +60,7 @@ Determine the experience level (Intern, Entry, Mid, Senior, Lead, Staff, Directo
 Refine the exact location if clearly stated (e.g., 'New York, NY' or 'San Francisco, CA').
 Determine if it is explicitly noted as a remote or remote-friendly role.
 Extract the pay range or salary if explicitly mentioned (e.g., '$100k - $150k' or '£50,000 - £70,000'). 
+Normalize the job title into a clean version (e.g. 'Software Engineer' instead of 'Ninja Developer').
 
 Content:
 {clean_text}

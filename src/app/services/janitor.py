@@ -157,6 +157,8 @@ class JanitorService:
                             job.is_remote = True
                         if details.salary_range:
                             job.salary_range = details.salary_range
+                        if details.normalized_title:
+                            job.normalized_title = details.normalized_title
 
                     job.needs_deep_scrape = False
                     
