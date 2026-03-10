@@ -58,8 +58,15 @@ const renderTableBody = (query: any, colSpan: number, renderRow: (item: any) => 
 const AdminPage = () => {
   const [companyPage, setCompanyPage] = useState(1);
   const [jobPage, setJobPage] = useState(1);
+  
+  // Input states (uncontrolled for performance, only sync on button click)
+  const [companySearchInput, setCompanySearchInput] = useState('');
+  const [jobSearchInput, setJobSearchInput] = useState('');
+  
+  // Query states (these trigger the API calls)
   const [companySearch, setCompanySearch] = useState('');
   const [jobSearch, setJobSearch] = useState('');
+  
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
@@ -173,17 +180,33 @@ const AdminPage = () => {
                       <CardTitle>Portfolio Companies</CardTitle>
                       <CardDescription>Monitor and trigger primary discovery scrapes for tracked companies.</CardDescription>
                     </div>
-                    <div className="relative w-full md:w-72">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Search companies..." 
-                        className="pl-9 bg-white/5 border-white/10"
-                        value={companySearch}
-                        onChange={(e) => {
-                          setCompanySearch(e.target.value);
+                    <div className="flex gap-2 w-full md:w-auto">
+                      <div className="relative w-full md:w-72">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="Search companies..." 
+                          className="pl-9 bg-white/5 border-white/10"
+                          value={companySearchInput}
+                          onChange={(e) => setCompanySearchInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setCompanySearch(companySearchInput);
+                              setCompanyPage(1);
+                            }
+                          }}
+                        />
+                      </div>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="bg-white/10 hover:bg-white/20 px-3"
+                        onClick={() => {
+                          setCompanySearch(companySearchInput);
                           setCompanyPage(1);
                         }}
-                      />
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
@@ -295,17 +318,33 @@ const AdminPage = () => {
                       <CardTitle>Global Job Audit</CardTitle>
                       <CardDescription>Review listing status and trigger Phase 2 AI enrichment.</CardDescription>
                     </div>
-                    <div className="relative w-full md:w-72">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Search jobs or companies..." 
-                        className="pl-9 bg-white/5 border-white/10"
-                        value={jobSearch}
-                        onChange={(e) => {
-                          setJobSearch(e.target.value);
+                    <div className="flex gap-2 w-full md:w-auto">
+                      <div className="relative w-full md:w-72">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="Search jobs or companies..." 
+                          className="pl-9 bg-white/5 border-white/10"
+                          value={jobSearchInput}
+                          onChange={(e) => setJobSearchInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setJobSearch(jobSearchInput);
+                              setJobPage(1);
+                            }
+                          }}
+                        />
+                      </div>
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="bg-white/10 hover:bg-white/20 px-3"
+                        onClick={() => {
+                          setJobSearch(jobSearchInput);
                           setJobPage(1);
                         }}
-                      />
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
