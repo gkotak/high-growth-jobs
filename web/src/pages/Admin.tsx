@@ -507,8 +507,8 @@ const AdminPage = () => {
             </button>
           </div>
           
-          <div className="p-2 border-b border-white/5 bg-zinc-900/30 shrink-0 overflow-x-auto">
-            <div className="flex gap-2">
+          <div className="p-2 border-b border-white/5 bg-zinc-900/30 shrink-0">
+            <div className="flex flex-wrap gap-2">
               {activeTabs.map(tab => (
                 <button
                   key={tab}
