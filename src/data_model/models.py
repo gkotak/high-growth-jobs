@@ -19,7 +19,7 @@ class CompanyVCFirmLink(SQLModel, table=True):
 
 class VCFirmBase(SQLModel):
     name: str = Field(index=True, unique=True)
-    website_url: str
+    website_url: Optional[str] = Field(default=None, nullable=True)
     portfolio_url: Optional[str] = None
     region: Optional[str] = None # US, EU, Global
     tier: Optional[str] = None # Tier 1, Tier 2, etc.
@@ -47,7 +47,7 @@ class VCFirm(VCFirmBase, table=True):
 
 class CompanyBase(SQLModel):
     name: str = Field(index=True)
-    website_url: Optional[str] = Field(unique=True, index=True)
+    website_url: Optional[str] = Field(default=None, unique=True, index=True, nullable=True)
     career_url: Optional[str] = None
     description: Optional[str] = None
     logo_url: Optional[str] = None

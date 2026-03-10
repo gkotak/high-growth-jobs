@@ -63,6 +63,51 @@ async def fetch_axios_prorata(url: str) -> str:
         response.raise_for_status()
         return response.text
 
+async def get_latest_prorata_url() -> Optional[str]:
+    """Find the link for the most recent Pro Rata newsletter from Dan Primack's author page."""
+    author_url = "https://www.axios.com/authors/danprimack"
+    jina_url = f"https://r.jina.ai/{author_url}"
+    
+    headers = {"User-Agent": "curl/8.7.1"}
+    
+    logger.info("Automatically discovering the latest Pro Rata URL...")
+    
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            async with httpx.AsyncClient(headers=headers, timeout=30.0) as http_client:
+                response = await http_client.get(jina_url, follow_redirects=True)
+                response.raise_for_status()
+                content = response.text
+                
+                import re
+                # Extract the URL from markdown links [text](URL) where the URL contains 'pro-rata'
+                # We look for https links specifically inside the parenthesis
+                pattern = r"https://www\.axios\.com/[^)\s]*pro-rata-[^)\s]+"
+                matches = re.findall(pattern, content)
+                
+                if matches:
+                    # Deduplicate and filter out image proxy URLs which often contain 'pro-rata' in the params
+                    unique_matches = []
+                    for m in matches:
+                        if m not in unique_matches and "_next/image" not in m:
+                            unique_matches.append(m)
+                    
+                    if unique_matches:
+                        # First match is typically the most recent on the author page
+                        latest_url = unique_matches[0]
+                        logger.info(f"Discovered latest URL: {latest_url}")
+                        return latest_url
+                
+                logger.warning(f"No Pro Rata links found on author page (Attempt {attempt+1}/{max_retries}).")
+        except Exception as e:
+            logger.error(f"Discovery attempt {attempt+1} failed: {e}")
+        
+        if attempt < max_retries - 1:
+            await asyncio.sleep(2)
+            
+    return None
+
 def extract_vc_deals_text(html: str) -> Optional[str]:
     soup = BeautifulSoup(html, 'html.parser')
     
@@ -156,7 +201,7 @@ def upsert_deals(deals: List[FundingDeal]):
                     id=uuid.uuid4(),
                     name=deal.company_name,
                     tenant_id=tenant.id,
-                    website_url="#",
+                    website_url=None,
                     total_funding_amount=deal.total_funding_amount,
                     last_funding_date=today,
                     stage=deal.stage,
@@ -190,7 +235,7 @@ def upsert_deals(deals: List[FundingDeal]):
                 vc_stmt = select(VCFirm).where(VCFirm.name == inv_name)
                 vc = session.exec(vc_stmt).first()
                 if not vc:
-                    vc = VCFirm(id=uuid.uuid4(), name=inv_name, website_url="#", is_stub=True)
+                    vc = VCFirm(id=uuid.uuid4(), name=inv_name, website_url=None, is_stub=True)
                     session.add(vc)
                     session.flush()
                     created_vcs += 1
@@ -212,6 +257,13 @@ def upsert_deals(deals: List[FundingDeal]):
         logger.info(f"Finished upserting: Created {created_comps} companies, updated {updated_comps} existing ones, created {created_vcs} VC stubs.")
 
 async def main(source: str):
+    if source.lower() == "latest":
+        latest_url = await get_latest_prorata_url()
+        if not latest_url:
+            logger.error("Could not discover the latest Pro Rata URL.")
+            return
+        source = latest_url
+
     logger.info(f"Initiating ingestion from: {source}")
     try:
         if os.path.exists(source):
