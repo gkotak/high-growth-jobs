@@ -92,7 +92,10 @@ export function useForceScrape() {
       const response = await fetch(`${API_URL}/api/admin/companies/${companyId}/scrape`, {
         method: 'POST',
       });
-      if (!response.ok) throw new Error('Failed to trigger scrape');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to trigger scrape');
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -114,7 +117,10 @@ export function useForceEnrich() {
       const response = await fetch(`${API_URL}/api/admin/jobs/${jobId}/enrich`, {
         method: 'POST',
       });
-      if (!response.ok) throw new Error('Failed to trigger enrichment');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to trigger enrichment');
+      }
       return response.json();
     },
     onSuccess: () => {

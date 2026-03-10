@@ -126,3 +126,4 @@ class JobDetails(JobDetailsBase, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
     job: Job = Relationship(back_populates="details")
+

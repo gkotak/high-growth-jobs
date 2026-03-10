@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCcw, Search, BarChart3, Building2, Briefcase, Zap, AlertCircle, ExternalLink, X } from 'lucide-react';
+import { RefreshCcw, Search, BarChart3, Building2, Briefcase, Zap, AlertCircle, ExternalLink, X, TerminalSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Header from '@/components/Header';
 
@@ -59,6 +59,11 @@ const AdminPage = () => {
   const [companyPage, setCompanyPage] = useState(1);
   const [jobPage, setJobPage] = useState(1);
   
+  // SSE Logs
+  const [logs, setLogs] = useState<string[]>([]);
+  const [showConsole, setShowConsole] = useState(false);
+  const [logFilter, setLogFilter] = useState('');
+
   // Input states (uncontrolled for performance, only sync on button click)
   const [companySearchInput, setCompanySearchInput] = useState('');
   const [jobSearchInput, setJobSearchInput] = useState('');
@@ -77,11 +82,34 @@ const AdminPage = () => {
   const forceScrape = useForceScrape();
   const forceEnrich = useForceEnrich();
 
-  const handleForceScrape = (id: string) => {
+  // Connect to SSE Log Stream
+  React.useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL || '';
+    const source = new EventSource(`${API_URL}/api/admin/logs/stream`);
+    
+    source.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.message) {
+          setLogs((prev) => [...prev, data.message].slice(-100)); // Keep last 100 lines
+        }
+      } catch (e) {
+        console.error("Error parsing log line:", e);
+      }
+    };
+
+    return () => source.close();
+  }, []);
+
+  const handleForceScrape = (id: string, name: string) => {
+    setLogFilter(name);
+    setShowConsole(true);
     forceScrape.mutate(id);
   };
 
-  const handleForceEnrich = (id: string) => {
+  const handleForceEnrich = (id: string, name: string) => {
+    setLogFilter(name);
+    setShowConsole(true);
     forceEnrich.mutate(id);
   };
 
@@ -111,11 +139,20 @@ const AdminPage = () => {
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className={`container mx-auto px-4 py-8 transition-all duration-300 ${showConsole ? 'pr-96' : ''}`}>
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold tracking-tight">Admin Control Center</h1>
             <div className="flex gap-2">
+              <Button 
+                onClick={() => setShowConsole(!showConsole)} 
+                variant="outline" 
+                size="sm"
+                className={`border-white/10 ${showConsole ? 'bg-white/10 hover:bg-white/20' : 'bg-white/5 hover:bg-white/10'}`}
+              >
+                <TerminalSquare className="h-4 w-4 mr-2" />
+                Logs
+              </Button>
               <Button variant="outline" size="sm" onClick={() => statsQuery.refetch()} className="border-white/10 bg-white/5 hover:bg-white/10">
                 <RefreshCcw className={`h-4 w-4 mr-2 ${statsQuery.isFetching ? 'animate-spin' : ''}`} />
                 Refresh Stats
@@ -288,7 +325,7 @@ const AdminPage = () => {
                               size="sm" 
                               variant="secondary" 
                               className="h-8 bg-white/10 hover:bg-white/20 border-none"
-                              onClick={() => handleForceScrape(company.id)}
+                              onClick={() => handleForceScrape(company.id, company.name)}
                               disabled={forceScrape.isPending}
                             >
                               <Zap className="h-3.5 w-3.5 mr-2" />
@@ -411,7 +448,7 @@ const AdminPage = () => {
                               size="sm" 
                               variant="ghost" 
                               className="h-8 hover:bg-white/5 text-xs"
-                              onClick={() => handleForceEnrich(job.id)}
+                              onClick={() => handleForceEnrich(job.id, job.title)}
                               disabled={!job.needs_deep_scrape || forceEnrich.isPending}
                             >
                               <Zap className="h-3.5 w-3.5 mr-2 text-yellow-500" />
@@ -452,15 +489,61 @@ const AdminPage = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
-      
-      {/* Processing Indicator */}
-      {(forceScrape.isPending || forceEnrich.isPending) && (
-        <div className="fixed bottom-6 right-6 bg-accent/90 backdrop-blur-md text-accent-foreground px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 border border-white/10">
-          <RefreshCcw className="h-4 w-4 animate-spin" />
-          <span className="text-sm font-semibold tracking-wide uppercase">Task Queued</span>
+        
+        {/* Activity Console Slide-over */}
+        <div 
+          className={`fixed right-0 top-[73px] bottom-0 w-96 bg-zinc-950 border-l border-white/10 transform transition-transform duration-300 z-40 flex flex-col ${showConsole ? 'translate-x-0' : 'translate-x-full'}`}
+        >
+          <div className="h-14 border-b border-white/10 flex items-center justify-between px-4 bg-zinc-900/50 shrink-0">
+            <div className="flex items-center gap-2">
+              <TerminalSquare className="h-4 w-4 text-emerald-500" />
+              <h3 className="text-sm font-semibold tracking-wide uppercase text-zinc-300">Execution History</h3>
+            </div>
+            <button onClick={() => setShowConsole(false)} className="p-1 hover:bg-white/10 rounded-md transition-colors text-muted-foreground hover:text-white">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          
+          <div className="p-2 border-b border-white/5 bg-zinc-900/30 shrink-0">
+            <div className="flex items-center bg-black/50 border border-white/10 rounded-md px-2 py-1 focus-within:border-white/20 transition-colors">
+              <Search className="h-3 w-3 text-muted-foreground mr-2" />
+              <input 
+                type="text" 
+                placeholder="Filter logs (e.g., Anthropic, Error)..." 
+                value={logFilter}
+                onChange={(e) => setLogFilter(e.target.value)}
+                className="bg-transparent border-none text-xs w-full focus:outline-none text-zinc-300 placeholder:text-zinc-600"
+              />
+              {logFilter && (
+                <button onClick={() => setLogFilter('')} className="ml-1 text-muted-foreground hover:text-white">
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed scroll-smooth flex flex-col justify-end min-h-0 bg-black/40">
+            <div className="flex flex-col gap-1.5 mt-auto">
+              {logs.length === 0 ? (
+                <div className="text-zinc-600 italic">Waiting for logs...</div>
+              ) : (
+                logs.filter(log => !logFilter || log.toLowerCase().includes(logFilter.toLowerCase())).map((log, i) => (
+                  <div key={i} className={`
+                    ${log.includes('[ERROR]') || log.includes('❌') ? 'text-red-400 font-medium' : ''}
+                    ${log.includes('✅') || log.includes('✨') ? 'text-emerald-400 font-medium' : ''}
+                    ${log.includes('🔍') || log.includes('🧠') || log.includes('[INFO]') ? 'text-zinc-300' : 'text-zinc-500'}
+                   break-words whitespace-pre-wrap`}>
+                    {log}
+                  </div>
+                ))
+              )}
+              {logs.length > 0 && logs.filter(log => !logFilter || log.toLowerCase().includes(logFilter.toLowerCase())).length === 0 && (
+                <div className="text-zinc-600 italic">No logs match the filter...</div>
+              )}
+            </div>
+          </div>
         </div>
-      )}
+      </main>
     </div>
   );
 };
