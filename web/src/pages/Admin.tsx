@@ -192,7 +192,7 @@ const AdminPage = () => {
                       <CardTitle>Portfolio Companies</CardTitle>
                       <CardDescription>Monitor and trigger primary discovery scrapes for tracked companies.</CardDescription>
                     </div>
-                    <div className="flex w-full md:w-80 h-9 items-center rounded-md border border-white/20 bg-white/5 focus-within:border-accent transition-all overflow-hidden">
+                    <div className="flex w-full md:w-80 h-9 items-center rounded-md border border-white/40 bg-white/5 focus-within:border-accent transition-all overflow-hidden">
                       <div className="flex items-center flex-1 px-3">
                         <input 
                           placeholder="Search companies..." 
@@ -215,7 +215,7 @@ const AdminPage = () => {
                           </button>
                         )}
                       </div>
-                      <div className="h-full w-px bg-white/20" />
+                      <div className="h-full w-px bg-white/40" />
                       <button 
                         className="px-3 h-full hover:bg-white/10 transition-colors flex items-center justify-center shrink-0"
                         onClick={() => {
@@ -336,7 +336,7 @@ const AdminPage = () => {
                       <CardTitle>Global Job Audit</CardTitle>
                       <CardDescription>Review listing status and trigger Phase 2 AI enrichment.</CardDescription>
                     </div>
-                    <div className="flex w-full md:w-80 h-9 items-center rounded-md border border-white/20 bg-white/5 focus-within:border-accent transition-all overflow-hidden">
+                    <div className="flex w-full md:w-80 h-9 items-center rounded-md border border-white/40 bg-white/5 focus-within:border-accent transition-all overflow-hidden">
                       <div className="flex items-center flex-1 px-3">
                         <input 
                           placeholder="Search jobs..." 
@@ -359,7 +359,7 @@ const AdminPage = () => {
                           </button>
                         )}
                       </div>
-                      <div className="h-full w-px bg-white/20" />
+                      <div className="h-full w-px bg-white/40" />
                       <button 
                         className="px-3 h-full hover:bg-white/10 transition-colors flex items-center justify-center shrink-0"
                         onClick={() => {
