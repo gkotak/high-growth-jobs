@@ -42,9 +42,10 @@ async def get_admin_companies(
     search: Optional[str] = None,
     sort_by: Optional[str] = Query("name"), # name, rank, last_scraped
     sort_order: Optional[str] = Query("asc"), # asc, desc
+    search_only: Optional[bool] = Query(False),
     session: Session = Depends(get_session)
 ):
-    """List of companies with ingestion metadata, search, and sorting."""
+    """List with pagination, cb_rank sorting, and filtering."""
     stmt = select(Company)
     
     if search:
@@ -74,6 +75,17 @@ async def get_admin_companies(
     
     results = []
     for c in companies:
+        if search_only:
+            # Lightweight response for autocomplete
+            results.append({
+                "id": c.id,
+                "name": c.name,
+                "job_count": 0,
+                "pending_count": 0,
+                "cb_rank": c.cb_rank or 999999
+            })
+            continue
+
         job_count = session.exec(select(func.count(Job.id)).where(Job.company_id == c.id)).one()
         pending_count = session.exec(select(func.count(Job.id)).where(Job.company_id == c.id).where(Job.needs_deep_scrape == True).where(Job.status == "active")).one()
         results.append({
@@ -119,16 +131,38 @@ async def run_throttling_scrape(company_id: UUID):
                 session.add(company)
                 session.commit()
                 
-                # 2. Enrichment Phase
-                logger.info(f"🧠 Enrichment Phase: Scrape complete for {company.name}. Looking for jobs to normalize...")
-                # We run a pass for THIS company specifically
-                pending_jobs = session.exec(
-                    select(Job).where(Job.company_id == company.id).where(Job.needs_deep_scrape == True)
-                ).all()
+                # 2. Enrichment Phase (The Backlog Clearer)
+                logger.info(f"🧠 Enrichment Phase: Scrape complete for {company.name}. Checking for full backlog...")
                 
-                if pending_jobs:
-                    logger.info(f"✨ Found {len(pending_jobs)} new jobs for {company.name}. Triggering targeted enrichment...")
-                    await service.enrich_pending_jobs(limit=len(pending_jobs) + 5, source="manual")
+                # Fetch EVERY job for this company that still needs deep scraping
+                backlog_stmt = (
+                    select(Job)
+                    .where(Job.company_id == company.id)
+                    .where(Job.needs_deep_scrape == True)
+                    .where(Job.status == "active")
+                    .order_by(Job.created_at.desc())
+                )
+                backlog_jobs = session.exec(backlog_stmt).all()
+                total_pending = len(backlog_jobs)
+                
+                if total_pending > 0:
+                    logger.info(f"✨ Backlog detected: {total_pending} jobs for {company.name} need enrichment. Starting high-priority batch...")
+                    
+                    # Create a clear log entry for the UI
+                    start_log = ExecutionLog(
+                        company_id=company.id,
+                        source="manual",
+                        action="enrichment",
+                        status="success",
+                        payload={"message": f"Clearing backlog of {total_pending} pending jobs"}
+                    )
+                    session.add(start_log)
+                    session.commit()
+                    
+                    # Process the entire backlog (limit set high to ensure we get them all)
+                    await service.enrich_pending_jobs(limit=total_pending + 10, source="manual", company_id=company_id)
+                else:
+                    logger.info(f"✅ No pending enrichment backlog for {company.name}")
                 
                 logger.info(f"✅ Manual scrape/enrich successfully finished for {company.name}")
             except Exception as e:
@@ -145,11 +179,44 @@ async def force_scrape_company(company_id: UUID, background_tasks: BackgroundTas
         logger.error(f"Error in force_scrape_company: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/logs")
+async def get_global_logs(limit: int = 100, session: Session = Depends(get_session)):
+    """Fetch global structured execution history for all companies/daemons."""
+    try:
+        stmt = select(ExecutionLog).options(
+            selectinload(ExecutionLog.company),
+            selectinload(ExecutionLog.job)
+        ).order_by(ExecutionLog.created_at.desc()).limit(limit)
+        logs = session.exec(stmt).all()
+        
+        # Include names for UI
+        results = []
+        for l in logs:
+            payload = dict(l.payload)
+            if l.company:
+                payload["company_name"] = l.company.name
+            if l.job:
+                payload["job_title"] = l.job.title
+            
+            # Create a dict to return with these extra fields
+            res = l.dict()
+            res["payload"] = payload
+            results.append(res)
+            
+        return results
+    except Exception as e:
+        logger.error(f"Error fetching global logs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/companies/{company_id}/logs")
 async def get_company_logs(company_id: UUID, limit: int = 100, session: Session = Depends(get_session)):
     """Fetch structured execution history for a company and its jobs."""
     try:
-        stmt = select(ExecutionLog).where(
+        stmt = select(ExecutionLog).options(
+            selectinload(ExecutionLog.company),
+            selectinload(ExecutionLog.job)
+        ).where(
             or_(
                 ExecutionLog.company_id == company_id,
                 ExecutionLog.job_id.in_(
@@ -158,7 +225,20 @@ async def get_company_logs(company_id: UUID, limit: int = 100, session: Session 
             )
         ).order_by(ExecutionLog.created_at.desc()).limit(limit)
         logs = session.exec(stmt).all()
-        return logs
+        
+        results = []
+        for l in logs:
+            payload = dict(l.payload or {})
+            if l.company:
+                payload["company_name"] = l.company.name
+            if l.job:
+                payload["job_title"] = l.job.title
+            
+            res = l.dict()
+            res["payload"] = payload
+            results.append(res)
+            
+        return results
     except Exception as e:
         logger.error(f"Error fetching logs for {company_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -239,7 +319,7 @@ async def force_enrich_job(job_id: UUID, background_tasks: BackgroundTasks, sess
                     job.needs_deep_scrape = True
                     session.add(job)
                     session.commit()
-                    await service.enrich_pending_jobs(limit=1, source="manual") # Process just this one
+                    await service.enrich_pending_jobs(limit=1, source="manual", company_id=job.company_id) # Process just this one (or first for company)
                     logger.info(f"✅ Successfully enriched job: {job.title}")
                 except Exception as e:
                     logger.error(f"❌ Enrichment failed for job {job.title}: {str(e)}")

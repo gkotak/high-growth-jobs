@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { 
   useAdminStats, 
   useAdminCompanies, 
+  useAdminCompaniesSearch,
   useAdminJobs, 
   useForceScrape, 
   useForceEnrich,
-  useCompanyLogs,
+  useExecutionLogs,
   AdminCompany,
   AdminJob
 } from '@/hooks/useAdmin';
@@ -22,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCcw, Search, BarChart3, Building2, Briefcase, Zap, AlertCircle, ExternalLink, X, TerminalSquare } from 'lucide-react';
+import { RefreshCcw, Search, BarChart3, Building2, Briefcase, Zap, AlertCircle, ExternalLink, X, TerminalSquare, Plus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Header from '@/components/Header';
 
@@ -63,9 +64,12 @@ const AdminPage = () => {
   const [showConsole, setShowConsole] = useState(false);
   const [activeTabs, setActiveTabs] = useState<Array<{name: string, id: string}>>([{ name: 'All', id: '' }]);
   const [activeTabName, setActiveTabName] = useState<string>('All');
+  const [isAddingTab, setIsAddingTab] = useState(false);
+  const [tabSearch, setTabSearch] = useState('');
   
   const activeTabId = activeTabs.find(t => t.name === activeTabName)?.id || '';
-  const logsQuery = useCompanyLogs(activeTabId);
+  const logsQuery = useExecutionLogs(activeTabId);
+  const searchResults = useAdminCompaniesSearch(tabSearch);
 
   // Input states (uncontrolled for performance, only sync on button click)
   const [companySearchInput, setCompanySearchInput] = useState('');
@@ -75,7 +79,7 @@ const AdminPage = () => {
   const [companySearch, setCompanySearch] = useState('');
   const [jobSearch, setJobSearch] = useState('');
   
-  const [sortBy, setSortBy] = useState('name');
+  const [sortBy, setSortBy] = useState('rank');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
   const statsQuery = useAdminStats();
@@ -186,19 +190,6 @@ const AdminPage = () => {
                 <p className="text-xs text-muted-foreground">Jobs awaiting AI Deep Scrape</p>
               </CardContent>
             </Card>
-            
-            <Card className="glass-card border-white/5 bg-white/5 shadow-none">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Data Points</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <div className="text-2xl font-bold">{statsQuery.data?.job_count}</div>
-                )}
-                <p className="text-xs text-muted-foreground">Historical jobs in system</p>
-              </CardContent>
-            </Card>
           </div>
 
           <Tabs defaultValue="companies" className="space-y-4">
@@ -261,12 +252,11 @@ const AdminPage = () => {
                         <TableHead className="cursor-pointer hover:text-accent transition-colors" onClick={() => toggleSort('rank')}>
                           Rank {sortBy === 'rank' && (sortOrder === 'asc' ? '↑' : '↓')}
                         </TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Jobs</TableHead>
-                        <TableHead>Pending</TableHead>
                         <TableHead className="cursor-pointer hover:text-accent transition-colors" onClick={() => toggleSort('last_scraped')}>
                           Last Scraped {sortBy === 'last_scraped' && (sortOrder === 'asc' ? '↑' : '↓')}
                         </TableHead>
+                        <TableHead>Jobs</TableHead>
+                        <TableHead>Pending</TableHead>
                         <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -288,11 +278,14 @@ const AdminPage = () => {
                               {company.cb_rank || '--'}
                             </span>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-[11px] text-muted-foreground whitespace-nowrap">
                             {company.last_scraped_at ? (
-                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 px-2 py-0">Synced</Badge>
+                              <div className="flex flex-col">
+                                <span>{new Date(company.last_scraped_at).toLocaleDateString()}</span>
+                                <span className="text-[10px] opacity-60 font-mono italic">{new Date(company.last_scraped_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              </div>
                             ) : (
-                              <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 px-2 py-0">Pending</Badge>
+                              <span className="opacity-40">Never</span>
                             )}
                           </TableCell>
                           <TableCell className="font-mono text-sm">{company.job_count}</TableCell>
@@ -303,19 +296,16 @@ const AdminPage = () => {
                               <span className="text-muted-foreground opacity-50">0</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {company.last_scraped_at ? new Date(company.last_scraped_at).toLocaleDateString() : 'Never'}
-                          </TableCell>
                           <TableCell className="text-right">
                             <Button 
                               size="sm" 
                               variant="secondary" 
-                              className="h-8 bg-white/10 hover:bg-white/20 border-none"
+                              className="h-8 bg-white/10 hover:bg-white/20 border-none transition-all group"
                               onClick={() => handleForceScrape(company.id, company.name)}
                               disabled={forceScrape.isPending}
                             >
-                              <Zap className="h-3.5 w-3.5 mr-2" />
-                              Force Scrape
+                              <Zap className="h-3.5 w-3.5 mr-2 group-hover:text-yellow-500 transition-colors" />
+                              Retrieve new jobs
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -492,7 +482,7 @@ const AdminPage = () => {
           
           <div className="p-2 border-b border-white/5 bg-zinc-900/30 flex flex-col gap-2 shrink-0">
             <div className="flex flex-wrap gap-2 items-center justify-between">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center relative">
                 {activeTabs.map(tab => (
                   <button
                     key={tab.name}
@@ -518,12 +508,73 @@ const AdminPage = () => {
                     )}
                   </button>
                 ))}
+                
+                <div className="flex items-center gap-1.5 ml-1">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className={`h-7 w-7 p-0 transition-all ${isAddingTab ? 'bg-white/10 text-white border border-white/20' : 'bg-white/5 text-zinc-400 border border-white/5 hover:bg-white/10'}`}
+                    onClick={() => {
+                      setIsAddingTab(!isAddingTab);
+                      if (isAddingTab) setTabSearch('');
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                  
+                  {isAddingTab && (
+                    <div className="relative">
+                       <Input 
+                        placeholder="company name" 
+                        autoFocus
+                        className="h-7 w-32 bg-black/40 border-white/10 text-[10px] text-zinc-300 focus:bg-black/60 focus:border-emerald-500/50 transition-all px-2 placeholder:text-zinc-600"
+                        value={tabSearch}
+                        onChange={(e) => setTabSearch(e.target.value)}
+                       />
+                       
+                       {tabSearch.length >= 2 && (
+                        <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-zinc-200 rounded-xl shadow-2xl z-50 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-100 overflow-hidden h-auto">
+                           <div className="max-h-72 overflow-y-auto flex flex-col p-2">
+                              {searchResults.isLoading ? (
+                                <div className="px-4 py-8 text-center text-xs text-zinc-400 italic">Searching...</div>
+                              ) : searchResults.data?.data && searchResults.data.data.length > 0 ? (
+                                searchResults.data.data.map((c, i) => (
+                                  <React.Fragment key={c.id}>
+                                    <button
+                                      className="text-left px-4 py-3 rounded-lg hover:bg-zinc-50 text-xs text-zinc-700 hover:text-zinc-900 transition-colors truncate font-semibold"
+                                      onClick={() => {
+                                        if (!activeTabs.some(t => t.id === c.id)) {
+                                          setActiveTabs(prev => [...prev, { name: c.name, id: c.id }]);
+                                        }
+                                        setActiveTabName(c.name);
+                                        setIsAddingTab(false);
+                                        setTabSearch('');
+                                      }}
+                                    >
+                                      {c.name}
+                                    </button>
+                                    {i < (searchResults.data?.data.length || 0) - 1 && (
+                                      <div className="h-[0.5px] bg-zinc-100/60 mx-2" />
+                                    )}
+                                  </React.Fragment>
+                                ))
+                              ) : (
+                                <div className="px-4 py-8 text-center text-xs text-zinc-500 italic">No matches discovered</div>
+                              )}
+                           </div>
+                        </div>
+                       )}
+                    </div>
+                  )}
+                </div>
               </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="h-8 px-2 text-zinc-400 hover:text-white"
-                onClick={() => logsQuery.refetch()}
+                onClick={() => {
+                  logsQuery.refetch();
+                }}
                 disabled={logsQuery.isFetching}
               >
                 <RefreshCcw className={`h-3 w-3 mr-1 ${logsQuery.isFetching ? 'animate-spin' : ''}`} />
@@ -534,14 +585,12 @@ const AdminPage = () => {
 
           <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed scroll-smooth flex flex-col justify-start min-h-0 bg-black/40">
             <div className="flex flex-col gap-1.5 mt-0">
-              {!activeTabId ? (
-                <div className="text-zinc-600 italic">Select a specific company to view execution logs.</div>
-              ) : logsQuery.isLoading ? (
+              {logsQuery.isLoading ? (
                 <div className="text-zinc-600 italic">Loading logs...</div>
               ) : logsQuery.isError ? (
                 <div className="text-red-400">Failed to load logs.</div>
               ) : !logsQuery.data || logsQuery.data.length === 0 ? (
-                <div className="text-zinc-600 italic">No execution history found for this company in the past 30 days.</div>
+                <div className="text-zinc-600 italic">No execution history found in the past 30 days.</div>
               ) : (
                 logsQuery.data.map((log) => (
                   <div key={log.id} className="mb-2 border-l-2 pl-2 flex flex-col gap-1
@@ -559,12 +608,22 @@ const AdminPage = () => {
                             'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'}`}>
                           {log.status}
                         </Badge>
+                        {log.payload?.company_name && (
+                          <span className="text-zinc-500 text-[10px] font-medium truncate max-w-[100px]">
+                            {log.payload.company_name}
+                          </span>
+                        )}
                       </div>
                       <span className="text-zinc-500 text-[10px]">{new Date(log.created_at).toLocaleString()}</span>
                     </div>
-                    {Object.keys(log.payload).length > 0 && (
+                    {Object.keys(log.payload || {}).filter(k => k !== 'company_name' && k !== 'job_title').length > 0 && (
                       <div className="text-zinc-400 text-[10px] mt-1 bg-black/30 border border-white/5 p-2 rounded whitespace-pre-wrap font-mono relative">
-                        {JSON.stringify(log.payload, null, 2)}
+                        {JSON.stringify(
+                          Object.fromEntries(
+                            Object.entries(log.payload).filter(([k]) => k !== 'company_name' && k !== 'job_title')
+                          ), 
+                          null, 2
+                        )}
                       </div>
                     )}
                   </div>

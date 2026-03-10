@@ -1,7 +1,9 @@
 import os
 import logging
+import asyncio
 from datetime import datetime, timedelta
-from typing import List, Set
+from typing import List, Set, Optional
+from uuid import UUID
 from sqlmodel import Session, select
 from src.app.core.orchestrator import MarketScraperOrchestrator
 from src.data_model.models import Company, Job, ExecutionLog
@@ -122,96 +124,125 @@ class JanitorService:
         session.flush() # Let the outer loop commit to maintain atomicity
         logger.info(f"Done with {company.name}. New: {new_count}, Closed: {stale_count}")
 
-    async def enrich_pending_jobs(self, limit: int = 50, source: str = "daemon"):
+    async def enrich_pending_jobs(self, limit: int = 50, source: str = "daemon", company_id: Optional[UUID] = None):
         """
         Phase 2: Deep scrapes a batch of jobs reading their raw HTML descriptions
         and extracting AI structured details to attach to JobDetails.
         """
-        logger.info(f"🧹 Phase 2 Enricher looking for up to {limit} pending jobs...")
+        logger.info(f"🧹 Phase 2 Enricher looking for up to {limit} pending jobs (Company: {company_id or 'Global'})...")
         with Session(engine) as session:
             statement = (
                 select(Job)
                 .where(Job.needs_deep_scrape == True)
                 .where(Job.status == "active")
-                .limit(limit)
             )
+            
+            if company_id:
+                statement = statement.where(Job.company_id == company_id)
+                
+            statement = statement.order_by(Job.created_at.desc()).limit(limit)
             jobs = session.exec(statement).all()
             
             if not jobs:
                 logger.info("No pending jobs need deep scraping right now.")
                 return
 
-            logger.info(f"Found {len(jobs)} jobs needing deep scrape. Starting enrichment...")
-            from src.data_model.models import JobDetails
-            from bs4 import BeautifulSoup
+            logger.info(f"Found {len(jobs)} jobs needing deep scrape. Starting parallel enrichment...")
             
-            for job in jobs:
-                try:
-                    logger.info(f"🔍 Deep scraping job: {job.title} at {job.job_url}")
-                    html, details = await self.orchestrator.run_deep_scrape_for_job(job)
-                    
-                    if not html:
-                        logger.warning(f"⚠️ Could not retrieve HTML for {job.job_url}. Skipping...")
-                        continue
-                        
-                    soup = BeautifulSoup(html, "html.parser")
-                    desc_text = soup.get_text(separator="\n", strip=True)
-                    
-                    # Check if JobDetails already exist (edge case)
-                    existing_details = session.exec(select(JobDetails).where(JobDetails.job_id == job.id)).first()
-                    job_details = existing_details if existing_details else JobDetails(job_id=job.id)
-                    
-                    job_details.description_html = html
-                    job_details.description_text = desc_text
-                    
-                    if details:
-                        job_details.extracted_description = details.extracted_description
-                        job_details.extracted_requirements = details.extracted_requirements
-                        job_details.extracted_benefits = details.extracted_benefits
-                        
-                        # Phase 2 AI Normalization
-                        if details.functional_area:
-                            job.functional_area = details.functional_area
-                        if details.experience_level:
-                            job.experience_level = details.experience_level
-                        if details.refined_location:
-                            job.location = details.refined_location
-                        if details.is_remote:
-                            job.is_remote = True
-                        if details.salary_range:
-                            job.salary_range = details.salary_range
-                        if details.normalized_title:
-                            job.normalized_title = details.normalized_title
+            # Local semaphore to limit concurrency within this batch to avoid rate limiting
+            sem = asyncio.Semaphore(10)
 
-                    job.needs_deep_scrape = False
-                    
-                    log_entry = ExecutionLog(
-                        company_id=job.company_id,
-                        job_id=job.id,
-                        source=source,
-                        action="enrichment",
-                        status="success",
-                        payload={"action": "normalized title and extracted details"}
-                    )
-                    
-                    session.add(job_details)
-                    session.add(job)
-                    session.add(log_entry)
-                    session.commit()
-                    logger.info(f"✅ Successfully enriched: {job.title}")
-                    
-                except Exception as e:
-                    logger.error(f"❌ Failed to enrich job {job.id}: {e}")
-                    log_entry = ExecutionLog(
-                        company_id=job.company_id,
-                        job_id=job.id,
-                        source=source,
-                        action="enrichment",
-                        status="failed",
-                        payload={"error": str(e)}
-                    )
-                    session.rollback()
-                    # Re-open session to commit the failure log
-                    with Session(engine) as err_session:
-                        err_session.add(log_entry)
-                        err_session.commit()
+            async def process_single_job(job_id):
+                async with sem:
+                    # Fresh session for each task to avoid DB concurrent access issues
+                    with Session(engine) as job_session:
+                        job = job_session.get(Job, job_id)
+                        if not job or not job.needs_deep_scrape:
+                            return
+                            
+                        try:
+                            from src.data_model.models import JobDetails
+                            from bs4 import BeautifulSoup
+                            
+                            logger.info(f"🔍 Deep scraping job: {job.title} at {job.job_url}")
+                            html, details = await self.orchestrator.run_deep_scrape_for_job(job)
+                            
+                            if not html:
+                                logger.warning(f"⚠️ Could not retrieve HTML for {job.job_url}. Skipping...")
+                                # Log the skip so the user knows why enrichment failed for this specific job
+                                log_entry = ExecutionLog(
+                                    company_id=job.company_id,
+                                    job_id=job.id,
+                                    source=source,
+                                    action="enrichment",
+                                    status="failed",
+                                    payload={"error": "Could not retrieve page content (404 or blocked)"}
+                                )
+                                job_session.add(log_entry)
+                                job_session.commit()
+                                return
+                                
+                            soup = BeautifulSoup(html, "html.parser")
+                            desc_text = soup.get_text(separator="\n", strip=True)
+                            
+                            # Check if JobDetails already exist (edge case)
+                            existing_details = job_session.exec(select(JobDetails).where(JobDetails.job_id == job.id)).first()
+                            job_details = existing_details if existing_details else JobDetails(job_id=job.id)
+                            
+                            job_details.description_html = html
+                            job_details.description_text = desc_text
+                            
+                            if details:
+                                job_details.extracted_description = details.extracted_description
+                                job_details.extracted_requirements = details.extracted_requirements
+                                job_details.extracted_benefits = details.extracted_benefits
+                                
+                                # Phase 2 AI Normalization
+                                if details.functional_area:
+                                    job.functional_area = details.functional_area
+                                if details.experience_level:
+                                    job.experience_level = details.experience_level
+                                if details.refined_location:
+                                    job.location = details.refined_location
+                                if details.is_remote:
+                                    job.is_remote = True
+                                if details.salary_range:
+                                    job.salary_range = details.salary_range
+                                if details.normalized_title:
+                                    job.normalized_title = details.normalized_title
+
+                            job.needs_deep_scrape = False
+                            
+                            log_entry = ExecutionLog(
+                                company_id=job.company_id,
+                                job_id=job.id,
+                                source=source,
+                                action="enrichment",
+                                status="success",
+                                payload={"action": "normalized title and extracted details"}
+                            )
+                            
+                            job_session.add(job_details)
+                            job_session.add(job)
+                            job_session.add(log_entry)
+                            job_session.commit()
+                            logger.info(f"✅ Successfully enriched: {job.title}")
+                            
+                        except Exception as e:
+                            logger.error(f"❌ Failed to enrich job {job_id}: {e}")
+                            log_entry = ExecutionLog(
+                                company_id=job.company_id,
+                                job_id=job_id,
+                                source=source,
+                                action="enrichment",
+                                status="failed",
+                                payload={"error": str(e)}
+                            )
+                            job_session.rollback()
+                            with Session(engine) as err_session:
+                                err_session.add(log_entry)
+                                err_session.commit()
+
+            # Execute all jobs in parallel batch
+            tasks = [process_single_job(job.id) for job in jobs]
+            await asyncio.gather(*tasks)

@@ -146,4 +146,7 @@ class ExecutionLog(SQLModel, table=True):
     # Granular JSON payload. e.g. {"new_jobs_found": 5} or {"error": "Cloudflare wall"}
     payload: dict = Field(default_factory=dict, sa_column=Column(JSONB))
     
+    company: Optional["Company"] = Relationship()
+    job: Optional["Job"] = Relationship()
+    
     created_at: datetime = Field(default_factory=datetime.utcnow, index=True)

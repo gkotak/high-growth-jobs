@@ -68,6 +68,25 @@ export function useAdminCompanies(
   });
 }
 
+export function useAdminCompaniesSearch(search?: string) {
+  return useQuery({
+    queryKey: ['admin', 'companies', 'search', search],
+    queryFn: async (): Promise<{ data: AdminCompany[]; total: number }> => {
+      if (!search || search.length < 2) return { data: [], total: 0 };
+      const params = new URLSearchParams();
+      params.append('page', '1');
+      params.append('limit', '50');
+      params.append('search', search);
+      params.append('search_only', 'true');
+      
+      const response = await fetch(`${API_URL}/api/admin/companies?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch autocomplete companies');
+      return response.json();
+    },
+    enabled: !!search && search.length >= 2,
+  });
+}
+
 export function useAdminJobs(page: number = 1, limit: number = 50, search?: string, status?: string) {
   return useQuery({
     queryKey: ['admin', 'jobs', page, limit, search, status],
@@ -145,17 +164,18 @@ export interface ExecutionLog {
   created_at: string;
 }
 
-export function useCompanyLogs(companyId: string) {
+export function useExecutionLogs(companyId?: string) {
   return useQuery({
-    queryKey: ['admin', 'logs', companyId],
+    queryKey: ['admin', 'logs', companyId || 'global'],
     queryFn: async (): Promise<ExecutionLog[]> => {
-      if (!companyId) return [];
-      const response = await fetch(`${API_URL}/api/admin/companies/${companyId}/logs`);
+      const endpoint = companyId 
+        ? `${API_URL}/api/admin/companies/${companyId}/logs`
+        : `${API_URL}/api/admin/logs`;
+      const response = await fetch(endpoint);
       if (!response.ok) {
         throw new Error('Failed to fetch logs');
       }
       return response.json();
     },
-    enabled: !!companyId, // Only fetch when we have an ID
   });
 }
