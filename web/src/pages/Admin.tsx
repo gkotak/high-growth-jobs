@@ -92,7 +92,7 @@ const AdminPage = () => {
       try {
         const data = JSON.parse(event.data);
         if (data.message) {
-          setLogs((prev) => [...prev, data.message].slice(-100)); // Keep last 100 lines
+          setLogs((prev) => [...prev, data.message].slice(-2000)); // Keep last 2000 lines
         }
       } catch (e) {
         console.error("Error parsing log line:", e);
