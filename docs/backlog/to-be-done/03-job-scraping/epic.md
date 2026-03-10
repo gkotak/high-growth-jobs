@@ -17,6 +17,8 @@ Automate the extraction of job listings and **full job descriptions** from diver
 - [ ] **Generic Web Scraper**: Fallback browser-based scraper for custom "Careers" pages. Must use pure `async_playwright` to avoid breaking Railway's `asyncio` event loop.
 
 ### 2. Dual-Phase Scraping Pipeline (The Engine)
+*Note: For detailed mechanical breakdowns of what fields are extracted in each phase, see the permanent architecture spec: `docs/architecture/scraping_strategy.md`.*
+
 - [ ] **Phase 1: Discoverer Loop**: Scans root career pages finding new `job_url` links. Creates quick DB rows tagged with `needs_deep_scrape=True`.
 - [ ] **Phase 2: Enricher Loop**: Continually queries for `needs_deep_scrape=True`. Issues lightweight HTTP GET requests to extract full raw body text. Converts it to `JobDetails` structure.
 
@@ -25,16 +27,7 @@ Automate the extraction of job listings and **full job descriptions** from diver
 - [ ] **AI Classifier**: Use LLM to extract Functional Area, Seniority, and Salary Range from text.
 - [ ] **Deduplication**: Logic to handle job posts that are refreshed hourly to avoid duplicates.
 
-## Data Model (Proposed Table Additions)
-- Expand `Job` table: `needs_deep_scrape` flag.
-- New `JobDetails` Table (1-to-1):
-  - `job_id`: UUID
-  - `description_html`: Raw HTML
-  - `description_text`: Clean block text
-  - `extracted_requirements`: Text array
-  - `extracted_benefits`: Text array
-
 ## Definition of Done
 - Background "Janitor" runs multiple async loops (Discovery + Enrichment) without crashing.
 - Successful "End-to-End" extraction of full job descriptions from 5 test companies (Greenhouse, Lever, and 1 Custom).
-- `Job` and `JobDetails` tables populated with normalized attributes.
+- `Job` and `JobDetails` tables populated with normalized attributes matching the data architecture rules.

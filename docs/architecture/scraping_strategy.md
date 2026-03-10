@@ -54,3 +54,36 @@ To avoid redundant AI extraction and Playwright runs, we employ a **Content Hash
 
 ### Manual Overrides
 A targeted script (`scripts/scrape_company.py`) exists to bypass the 7-day rule and the Smart Skip hash, allowing for immediate, forced re-scraping of a specific company by name or URL. Used for testing and immediate data refresh needs.
+
+---
+
+## 4. The Dual-Phase Pipeline (Discovery vs. Enrichment)
+
+To balance the need for speed (finding new jobs rapidly) against the high token cost and time required to process full job descriptions, the scraping architecture is split into two distinct asynchronous phases.
+
+### Phase 1: Discovery (The "Shallow" Scrape)
+**Goal:** Quickly map the career page to find new `job_url` links and get them into the database ASAP.
+**Mechanism:** Parses HTML lists/tables or ATS JSON endpoints.
+**Fields Captured (Raw Data):**
+These fields are saved exactly as they appear on the company's website:
+*   `title` (e.g., "Fullstack Ninja")
+*   `location` (e.g., "SF or Remote")
+*   `department` (e.g., "Growth & Foundations")
+*   `job_url` (The absolute link to apply)
+*   `salary_range` (Sometimes captured here if listed on the index page)
+
+Any job discovered here is immediately inserted into the database with `needs_deep_scrape = True`.
+
+### Phase 2: Enrichment (The "Deep" Scrape)
+**Goal:** Parse the actual job description body to extract rich details and use an LLM to normalize the messy data into standardized categories.
+**Mechanism:** Runs asynchronously in the background. Downloads the raw HTML of the individual `job_url` and sends the stripped text to the LLM (Gemini/OpenAI) using structured Pydantic outputs.
+**Fields Captured & Normalized (AI Data):**
+*   `functional_area`: Maps the raw department to a standard category (e.g., `Engineering`, `Product`, `Sales`).
+*   `experience_level`: Maps the title to standard tiers (`Intern`, `Entry`, `Mid`, `Senior`, `Lead`, `Staff`, `Director`, `Executive`).
+*   `normalized_title`: Cleans up the raw title (e.g., "Fullstack Ninja" -> "Software Engineer").
+*   `is_remote`: Boolean flag deduced from the job text.
+*   `salary_range`: Deep-read of the body text to find hidden pay bands (overwrites Phase 1 if found).
+*   `extracted_requirements`: Markdown list of core requirements.
+*   `extracted_benefits`: Markdown list of company perks.
+
+Once complete, `needs_deep_scrape` is set to `False`. This dual-speed orchestration ensures the Discovery UI is fast, while the deep data backfills automatically.
