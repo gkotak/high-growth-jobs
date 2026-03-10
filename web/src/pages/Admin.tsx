@@ -194,7 +194,6 @@ const AdminPage = () => {
                     </div>
                     <div className="flex w-full md:w-80 h-9 items-center rounded-md border border-white/20 bg-white/5 focus-within:border-accent transition-all overflow-hidden">
                       <div className="flex items-center flex-1 px-3">
-                        <Search className="h-4 w-4 text-muted-foreground mr-2 shrink-0" />
                         <input 
                           placeholder="Search companies..." 
                           className="w-full bg-transparent border-none text-sm focus:outline-none placeholder:text-muted-foreground"
@@ -339,9 +338,8 @@ const AdminPage = () => {
                     </div>
                     <div className="flex w-full md:w-80 h-9 items-center rounded-md border border-white/20 bg-white/5 focus-within:border-accent transition-all overflow-hidden">
                       <div className="flex items-center flex-1 px-3">
-                        <Search className="h-4 w-4 text-muted-foreground mr-2 shrink-0" />
                         <input 
-                          placeholder="Search jobs or companies..." 
+                          placeholder="Search jobs..." 
                           className="w-full bg-transparent border-none text-sm focus:outline-none placeholder:text-muted-foreground"
                           value={jobSearchInput}
                           onChange={(e) => setJobSearchInput(e.target.value)}
