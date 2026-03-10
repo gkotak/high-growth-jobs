@@ -53,14 +53,14 @@ export function useAdminCompanies(
   return useQuery({
     queryKey: ['admin', 'companies', page, limit, search, sortBy, sortOrder],
     queryFn: async (): Promise<{ data: AdminCompany[]; total: number }> => {
-      const url = new URL(`${API_URL}/api/admin/companies`);
-      url.searchParams.append('page', page.toString());
-      url.searchParams.append('limit', limit.toString());
-      if (search) url.searchParams.append('search', search);
-      url.searchParams.append('sort_by', sortBy);
-      url.searchParams.append('sort_order', sortOrder);
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+      if (search) params.append('search', search);
+      params.append('sort_by', sortBy);
+      params.append('sort_order', sortOrder);
       
-      const response = await fetch(url.toString());
+      const response = await fetch(`${API_URL}/api/admin/companies?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch admin companies');
       return response.json();
     },
@@ -71,13 +71,13 @@ export function useAdminJobs(page: number = 1, limit: number = 50, search?: stri
   return useQuery({
     queryKey: ['admin', 'jobs', page, limit, search, status],
     queryFn: async (): Promise<{ data: AdminJob[]; total: number }> => {
-      const url = new URL(`${API_URL}/api/admin/jobs`);
-      url.searchParams.append('page', page.toString());
-      url.searchParams.append('limit', limit.toString());
-      if (search) url.searchParams.append('search', search);
-      if (status) url.searchParams.append('status', status);
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+      if (search) params.append('search', search);
+      if (status) params.append('status', status);
       
-      const response = await fetch(url.toString());
+      const response = await fetch(`${API_URL}/api/admin/jobs?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch admin jobs');
       return response.json();
     },

@@ -25,6 +25,36 @@ import { RefreshCcw, Search, BarChart3, Building2, Briefcase, Zap, AlertCircle, 
 import { Skeleton } from '@/components/ui/skeleton';
 import Header from '@/components/Header';
 
+const renderTableBody = (query: any, colSpan: number, renderRow: (item: any) => React.ReactNode) => {
+  if (query.isLoading) {
+    return Array.from({ length: 5 }).map((_, i) => (
+      <TableRow key={i} className="border-white/5">
+        <TableCell colSpan={colSpan}><Skeleton className="h-10 w-full bg-white/5" /></TableCell>
+      </TableRow>
+    ));
+  }
+  if (query.isError) {
+    return (
+      <TableRow>
+        <TableCell colSpan={colSpan} className="h-24 text-center text-red-400">
+          <AlertCircle className="h-5 w-5 mx-auto mb-2 opacity-50" />
+          Failed to load data. Please check your connection or try again later.
+        </TableCell>
+      </TableRow>
+    );
+  }
+  if (!query.data?.data || query.data.total === 0) {
+    return (
+      <TableRow>
+        <TableCell colSpan={colSpan} className="h-24 text-center text-muted-foreground italic">
+          No records found.
+        </TableCell>
+      </TableRow>
+    );
+  }
+  return query.data.data.map(renderRow);
+};
+
 const AdminPage = () => {
   const [companyPage, setCompanyPage] = useState(1);
   const [jobPage, setJobPage] = useState(1);
@@ -177,13 +207,7 @@ const AdminPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {companiesQuery.isLoading ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                          <TableRow key={i} className="border-white/5">
-                            <TableCell colSpan={7}><Skeleton className="h-10 w-full" /></TableCell>
-                          </TableRow>
-                        ))
-                      ) : companiesQuery.data?.data.map((company: AdminCompany) => (
+                      {renderTableBody(companiesQuery, 7, (company: AdminCompany) => (
                         <TableRow key={company.id} className="border-white/5 hover:bg-white/5 transition-colors">
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
@@ -298,13 +322,7 @@ const AdminPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {jobsQuery.isLoading ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                          <TableRow key={i} className="border-white/5">
-                            <TableCell colSpan={6}><Skeleton className="h-10 w-full" /></TableCell>
-                          </TableRow>
-                        ))
-                      ) : jobsQuery.data?.data.map((job: AdminJob) => (
+                      {renderTableBody(jobsQuery, 6, (job: AdminJob) => (
                         <TableRow key={job.id} className="border-white/5 hover:bg-white/5 transition-colors">
                           <TableCell className="max-w-[200px] truncate font-medium">
                             {job.title}
