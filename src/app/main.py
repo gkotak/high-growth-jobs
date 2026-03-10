@@ -13,6 +13,7 @@ from sqlalchemy.orm import selectinload
 from src.app.core.database import get_session
 from src.data_model.models import Company, Job, JobBase, CompanyBase, JobDetails, JobDetailsBase, VCFirm
 from src.app.core.logging_setup import setup_logger
+from src.app.api.admin import router as admin_router
 
 # Configure logging for the API (Use LOG_LEVEL env var, default to INFO)
 _LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -29,6 +30,9 @@ app = FastAPI(
     description="AI-Powered Job Search for the Next Generation of Tech Leaders",
     version="0.1.0",
 )
+
+# Register Admin Router
+app.include_router(admin_router)
 
 # CORS configuration
 app.add_middleware(
