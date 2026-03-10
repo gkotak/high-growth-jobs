@@ -59,6 +59,7 @@ Determine the functional area (Engineering, Product, Sales, Marketing, Operation
 Determine the experience level (Intern, Entry, Mid, Senior, Lead, Staff, Director, Executive).
 Refine the exact location if clearly stated (e.g., 'New York, NY' or 'San Francisco, CA').
 Determine if it is explicitly noted as a remote or remote-friendly role.
+Extract the pay range or salary if explicitly mentioned (e.g., '$100k - $150k' or '£50,000 - £70,000'). 
 
 Content:
 {clean_text}

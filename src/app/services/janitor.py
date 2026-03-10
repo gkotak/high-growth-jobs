@@ -155,7 +155,9 @@ class JanitorService:
                             job.location = details.refined_location
                         if details.is_remote:
                             job.is_remote = True
-                    
+                        if details.salary_range:
+                            job.salary_range = details.salary_range
+
                     job.needs_deep_scrape = False
                     
                     session.add(job_details)

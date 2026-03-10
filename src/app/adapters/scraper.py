@@ -34,6 +34,8 @@ class ExtractedJobDetails(BaseModel):
     experience_level: Optional[str] = None
     refined_location: Optional[str] = None
     is_remote: bool = False
+    # Extracted pay info (e.g. '$100k-$150k') from the deep scrape description
+    salary_range: Optional[str] = None
 
 class MultipassScraperAdapter(JobIngestPort):
     def __init__(self):

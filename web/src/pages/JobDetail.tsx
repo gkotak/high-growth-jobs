@@ -7,6 +7,7 @@ import { formatFunding, sortInvestors, formatFounded } from "@/data/mockJobs";
 import { useJob } from "@/hooks/useJobs";
 import { Button } from "@/components/ui/button";
 import GlassdoorRating from "@/components/GlassdoorRating";
+import { formatDisplaySalary } from "@/lib/utils";
 
 function timeAgo(dateStr: string): string {
   const now = new Date();
@@ -17,14 +18,6 @@ function timeAgo(dateStr: string): string {
   if (diffDays < 7) return `${diffDays} days ago`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
   return `${Math.floor(diffDays / 30)} months ago`;
-}
-
-function formatSalary(min?: number, max?: number): string | null {
-  if (!min && !max) return null;
-  const fmt = (n: number) => `$${(n / 1000).toFixed(0)}K`;
-  if (min && max) return `${fmt(min)} – ${fmt(max)}`;
-  if (min) return `${fmt(min)}+`;
-  return fmt(max!);
 }
 
 function formatDate(dateStr: string): string {
@@ -78,7 +71,7 @@ const JobDetail = () => {
     );
   }
 
-  const salary = formatSalary(job.salaryMin, job.salaryMax);
+  const salary = formatDisplaySalary(job);
   const company = job.company;
 
   // Render markdown-like description (bold, bullets, newlines)

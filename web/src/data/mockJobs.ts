@@ -6,6 +6,7 @@ export type Job = {
   remote: "Remote" | "Hybrid" | "On-site";
   salaryMin?: number;
   salaryMax?: number;
+  salaryRange?: string;
   postedAt: string;
   roleType: string;
   experienceLevel: string;

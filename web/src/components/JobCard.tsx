@@ -3,6 +3,7 @@ import { MapPin, Clock, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Job } from "@/data/mockJobs";
 import SignalBadge from "./SignalBadge";
+import { formatDisplaySalary } from "@/lib/utils";
 
 interface JobCardProps {
   job: Job;
@@ -21,16 +22,8 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(diffDays / 30)}mo ago`;
 }
 
-function formatSalary(min?: number, max?: number): string | null {
-  if (!min && !max) return null;
-  const fmt = (n: number) => `$${(n / 1000).toFixed(0)}K`;
-  if (min && max) return `${fmt(min)} – ${fmt(max)}`;
-  if (min) return `${fmt(min)}+`;
-  return fmt(max!);
-}
-
 const JobCard = ({ job, index, onCompanyClick }: JobCardProps) => {
-  const salary = formatSalary(job.salaryMin, job.salaryMax);
+  const salary = formatDisplaySalary(job);
   const navigate = useNavigate();
 
   return (
