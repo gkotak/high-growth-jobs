@@ -150,14 +150,15 @@ async def log_generator():
     import subprocess
     import os
     
-    log_file = "logs/app.log"
+    log_file = "logs/scrape.log"
     # Wait until log file exists or just tail -F
     if not os.path.exists("logs"):
         os.makedirs("logs", exist_ok=True)
+    if not os.path.exists(log_file):
         open(log_file, 'a').close()
         
     process = await asyncio.create_subprocess_exec(
-        "tail", "-F", "-n", "100", log_file,
+        "tail", "-F", "-n", "1000", log_file,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
