@@ -37,19 +37,39 @@ async def get_stats(session: Session = Depends(get_session)):
 async def get_admin_companies(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = None,
+    sort_by: Optional[str] = Query("name"), # name, rank, last_scraped
+    sort_order: Optional[str] = Query("asc"), # asc, desc
     session: Session = Depends(get_session)
 ):
-    """List of companies with ingestion metadata."""
-    stmt = (
-        select(Company)
-        .order_by(Company.name.asc())
-        .offset((page - 1) * limit)
-        .limit(limit)
-    )
+    """List of companies with ingestion metadata, search, and sorting."""
+    stmt = select(Company)
+    
+    if search:
+        search_pattern = f"%{search.strip()}%"
+        stmt = stmt.where(
+            (Company.name.ilike(search_pattern)) | 
+            (Company.website_url.ilike(search_pattern))
+        )
+    
+    # Dynamic Sorting
+    if sort_by == "rank":
+        order_col = Company.cb_rank
+    elif sort_by == "last_scraped":
+        order_col = Company.last_scraped_at
+    else:
+        order_col = Company.name
+        
+    if sort_order == "desc":
+        stmt = stmt.order_by(order_col.desc())
+    else:
+        stmt = stmt.order_by(order_col.asc())
+        
+    total_count = session.exec(select(func.count()).select_from(stmt.subquery())).one()
+    
+    stmt = stmt.offset((page - 1) * limit).limit(limit)
     companies = session.exec(stmt).all()
     
-    # Enrich with job counts. 
-    # NOTE: In a high-traffic production app, we would use a more efficient join query.
     results = []
     for c in companies:
         job_count = session.exec(select(func.count(Job.id)).where(Job.company_id == c.id)).one()
@@ -63,8 +83,6 @@ async def get_admin_companies(
             "pending_count": pending_count,
             "cb_rank": c.cb_rank
         })
-    
-    total_count = session.exec(select(func.count(Company.id))).one()
     
     return {
         "data": results,
@@ -123,17 +141,27 @@ async def force_scrape_company(company_id: UUID, background_tasks: BackgroundTas
 async def get_admin_jobs(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=100),
+    search: Optional[str] = None,
     status: Optional[str] = None,
     needs_deep_scrape: Optional[bool] = None,
     session: Session = Depends(get_session)
 ):
     """Full job list with detailed status for admin auditing."""
-    stmt = select(Job).options(selectinload(Job.company)).order_by(Job.created_at.desc())
+    stmt = select(Job).options(selectinload(Job.company)).join(Company)
     
+    if search:
+        search_pattern = f"%{search.strip()}%"
+        stmt = stmt.where(
+            (Job.title.ilike(search_pattern)) | 
+            (Company.name.ilike(search_pattern))
+        )
+        
     if status:
         stmt = stmt.where(Job.status == status)
     if needs_deep_scrape is not None:
         stmt = stmt.where(Job.needs_deep_scrape == needs_deep_scrape)
+    
+    stmt = stmt.order_by(Job.created_at.desc())
     
     total_count = session.exec(select(func.count()).select_from(stmt.subquery())).one()
     

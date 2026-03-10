@@ -17,6 +17,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,10 +28,14 @@ import Header from '@/components/Header';
 const AdminPage = () => {
   const [companyPage, setCompanyPage] = useState(1);
   const [jobPage, setJobPage] = useState(1);
+  const [companySearch, setCompanySearch] = useState('');
+  const [jobSearch, setJobSearch] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
   const statsQuery = useAdminStats();
-  const companiesQuery = useAdminCompanies(companyPage);
-  const jobsQuery = useAdminJobs(jobPage);
+  const companiesQuery = useAdminCompanies(companyPage, 20, companySearch, sortBy, sortOrder);
+  const jobsQuery = useAdminJobs(jobPage, 50, jobSearch);
   
   const forceScrape = useForceScrape();
   const forceEnrich = useForceEnrich();
@@ -43,8 +48,18 @@ const AdminPage = () => {
     forceEnrich.mutate(id);
   };
 
+  const toggleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+    setCompanyPage(1); // Reset to first page on sort
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Header />
       
       <main className="container mx-auto px-4 py-8">
@@ -52,7 +67,7 @@ const AdminPage = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold tracking-tight">Admin Control Center</h1>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => statsQuery.refetch()}>
+              <Button variant="outline" size="sm" onClick={() => statsQuery.refetch()} className="border-white/10 bg-white/5 hover:bg-white/10">
                 <RefreshCcw className={`h-4 w-4 mr-2 ${statsQuery.isFetching ? 'animate-spin' : ''}`} />
                 Refresh Stats
               </Button>
@@ -61,7 +76,7 @@ const AdminPage = () => {
 
           {/* Stats Overview */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="glass-card border-white/10">
+            <Card className="glass-card border-white/5 bg-white/5 shadow-none">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
                 <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -74,7 +89,7 @@ const AdminPage = () => {
               </CardContent>
             </Card>
             
-            <Card className="glass-card border-white/10">
+            <Card className="glass-card border-white/5 bg-white/5 shadow-none">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Jobs</CardTitle>
                 <Briefcase className="h-4 w-4 text-accent" />
@@ -87,7 +102,7 @@ const AdminPage = () => {
               </CardContent>
             </Card>
             
-            <Card className="glass-card border-white/10">
+            <Card className="glass-card border-white/5 bg-white/5 shadow-none">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Pending Enrichment</CardTitle>
                 <Zap className="h-4 w-4 text-yellow-500" />
@@ -100,7 +115,7 @@ const AdminPage = () => {
               </CardContent>
             </Card>
             
-            <Card className="glass-card border-white/10">
+            <Card className="glass-card border-white/5 bg-white/5 shadow-none">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Data Points</CardTitle>
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
@@ -121,30 +136,51 @@ const AdminPage = () => {
             </TabsList>
 
             <TabsContent value="companies" className="space-y-4">
-              <Card className="border-white/10 bg-black/40 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle>Portfolio Companies</CardTitle>
-                  <CardDescription>
-                    Monitor and trigger primary discovery scrapes for tracked companies.
-                  </CardDescription>
+              <Card className="border-white/5 bg-transparent shadow-none">
+                <CardHeader className="px-0">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <CardTitle>Portfolio Companies</CardTitle>
+                      <CardDescription>Monitor and trigger primary discovery scrapes for tracked companies.</CardDescription>
+                    </div>
+                    <div className="relative w-full md:w-72">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Search companies..." 
+                        className="pl-9 bg-white/5 border-white/10"
+                        value={companySearch}
+                        onChange={(e) => {
+                          setCompanySearch(e.target.value);
+                          setCompanyPage(1);
+                        }}
+                      />
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-0">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent border-white/10">
-                        <TableHead>Name</TableHead>
+                        <TableHead className="cursor-pointer hover:text-accent transition-colors" onClick={() => toggleSort('name')}>
+                          Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                        </TableHead>
+                        <TableHead className="cursor-pointer hover:text-accent transition-colors" onClick={() => toggleSort('rank')}>
+                          Rank {sortBy === 'rank' && (sortOrder === 'asc' ? '↑' : '↓')}
+                        </TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Jobs</TableHead>
                         <TableHead>Pending</TableHead>
-                        <TableHead>Last Scraped</TableHead>
+                        <TableHead className="cursor-pointer hover:text-accent transition-colors" onClick={() => toggleSort('last_scraped')}>
+                          Last Scraped {sortBy === 'last_scraped' && (sortOrder === 'asc' ? '↑' : '↓')}
+                        </TableHead>
                         <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {companiesQuery.isLoading ? (
                         Array.from({ length: 5 }).map((_, i) => (
-                          <TableRow key={i}>
-                            <TableCell colSpan={6}><Skeleton className="h-10 w-full" /></TableCell>
+                          <TableRow key={i} className="border-white/5">
+                            <TableCell colSpan={7}><Skeleton className="h-10 w-full" /></TableCell>
                           </TableRow>
                         ))
                       ) : companiesQuery.data?.data.map((company: AdminCompany) => (
@@ -158,31 +194,35 @@ const AdminPage = () => {
                                 </a>
                               )}
                             </div>
-                            <span className="text-[10px] text-muted-foreground bg-white/5 px-1 rounded">Rank: {company.cb_rank || 'N/A'}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs font-mono bg-white/5 px-1.5 py-0.5 rounded text-muted-foreground">
+                              {company.cb_rank || '--'}
+                            </span>
                           </TableCell>
                           <TableCell>
                             {company.last_scraped_at ? (
-                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Synced</Badge>
+                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 px-2 py-0">Synced</Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Pending</Badge>
+                              <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 px-2 py-0">Pending</Badge>
                             )}
                           </TableCell>
-                          <TableCell>{company.job_count}</TableCell>
-                          <TableCell>
+                          <TableCell className="font-mono text-sm">{company.job_count}</TableCell>
+                          <TableCell className="font-mono text-sm">
                             {company.pending_count > 0 ? (
-                              <span className="text-yellow-500 font-semibold">{company.pending_count}</span>
+                              <span className="text-yellow-500 font-bold">{company.pending_count}</span>
                             ) : (
-                              <span className="text-muted-foreground">0</span>
+                              <span className="text-muted-foreground opacity-50">0</span>
                             )}
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
-                            {company.last_scraped_at ? new Date(company.last_scraped_at).toLocaleString() : 'Never'}
+                            {company.last_scraped_at ? new Date(company.last_scraped_at).toLocaleDateString() : 'Never'}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button 
                               size="sm" 
                               variant="secondary" 
-                              className="h-8"
+                              className="h-8 bg-white/10 hover:bg-white/20 border-none"
                               onClick={() => handleForceScrape(company.id)}
                               disabled={forceScrape.isPending}
                             >
@@ -195,39 +235,57 @@ const AdminPage = () => {
                     </TableBody>
                   </Table>
                   
-                  {/* Simple Pagination */}
-                  <div className="flex items-center justify-end space-x-2 py-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCompanyPage(p => Math.max(1, p - 1))}
-                      disabled={companyPage === 1}
-                    >
-                      Previous
-                    </Button>
-                    <div className="text-sm font-medium">Page {companyPage}</div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCompanyPage(p => p + 1)}
-                      disabled={!companiesQuery.data || companiesQuery.data.data.length < 20}
-                    >
-                      Next
-                    </Button>
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between py-4">
+                    <span className="text-xs text-muted-foreground">Showing {(companyPage-1)*20 + 1} to {Math.min(companyPage*20, companiesQuery.data?.total || 0)} of {companiesQuery.data?.total || 0}</span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCompanyPage(p => Math.max(1, p - 1))}
+                        disabled={companyPage === 1}
+                        className="hover:bg-white/5"
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCompanyPage(p => p + 1)}
+                        disabled={!companiesQuery.data || companiesQuery.data.data.length < 20}
+                        className="hover:bg-white/5"
+                      >
+                        Next
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="jobs" className="space-y-4">
-              <Card className="border-white/10 bg-black/40 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle>Global Job Audit</CardTitle>
-                  <CardDescription>
-                    Review specific job listings and manually trigger Phase 2 expansion.
-                  </CardDescription>
+              <Card className="border-white/5 bg-transparent shadow-none">
+                <CardHeader className="px-0">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <CardTitle>Global Job Audit</CardTitle>
+                      <CardDescription>Review listing status and trigger Phase 2 AI enrichment.</CardDescription>
+                    </div>
+                    <div className="relative w-full md:w-72">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Search jobs or companies..." 
+                        className="pl-9 bg-white/5 border-white/10"
+                        value={jobSearch}
+                        onChange={(e) => {
+                          setJobSearch(e.target.value);
+                          setJobPage(1);
+                        }}
+                      />
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-0">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent border-white/10">
@@ -242,7 +300,7 @@ const AdminPage = () => {
                     <TableBody>
                       {jobsQuery.isLoading ? (
                         Array.from({ length: 5 }).map((_, i) => (
-                          <TableRow key={i}>
+                          <TableRow key={i} className="border-white/5">
                             <TableCell colSpan={6}><Skeleton className="h-10 w-full" /></TableCell>
                           </TableRow>
                         ))
@@ -251,16 +309,16 @@ const AdminPage = () => {
                           <TableCell className="max-w-[200px] truncate font-medium">
                             {job.title}
                           </TableCell>
-                          <TableCell>{job.company_name}</TableCell>
+                          <TableCell className="text-sm opacity-80">{job.company_name}</TableCell>
                           <TableCell>
                             {job.needs_deep_scrape ? (
-                              <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Discovery</Badge>
+                              <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 px-2 py-0">Discovery</Badge>
                             ) : (
-                              <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-blue-500/20">Enriched</Badge>
+                              <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-2 py-0">Enriched</Badge>
                             )}
                           </TableCell>
                           <TableCell>
-                            <Badge variant={job.status === 'active' ? 'default' : 'outline'} className={job.status === 'active' ? 'bg-emerald-500' : 'text-muted-foreground'}>
+                            <Badge variant={job.status === 'active' ? 'default' : 'outline'} className={job.status === 'active' ? 'bg-emerald-500/80' : 'text-muted-foreground'}>
                               {job.status}
                             </Badge>
                           </TableCell>
@@ -270,12 +328,12 @@ const AdminPage = () => {
                           <TableCell className="text-right">
                             <Button 
                               size="sm" 
-                              variant="outline" 
-                              className="h-8 border-white/10 hover:bg-white/5"
+                              variant="ghost" 
+                              className="h-8 hover:bg-white/5 text-xs"
                               onClick={() => handleForceEnrich(job.id)}
                               disabled={!job.needs_deep_scrape || forceEnrich.isPending}
                             >
-                              <Zap className="h-3.5 w-3.5 mr-2 text-blue-500" />
+                              <Zap className="h-3.5 w-3.5 mr-2 text-yellow-500" />
                               AI Enrich
                             </Button>
                           </TableCell>
@@ -284,25 +342,29 @@ const AdminPage = () => {
                     </TableBody>
                   </Table>
                   
-                  {/* Simple Pagination */}
-                  <div className="flex items-center justify-end space-x-2 py-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setJobPage(p => Math.max(1, p - 1))}
-                      disabled={jobPage === 1}
-                    >
-                      Previous
-                    </Button>
-                    <div className="text-sm font-medium">Page {jobPage}</div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setJobPage(p => p + 1)}
-                      disabled={!jobsQuery.data || jobsQuery.data.data.length < 50}
-                    >
-                      Next
-                    </Button>
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between py-4">
+                    <span className="text-xs text-muted-foreground">Showing {(jobPage-1)*50 + 1} to {Math.min(jobPage*50, jobsQuery.data?.total || 0)} of {jobsQuery.data?.total || 0}</span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setJobPage(p => Math.max(1, p - 1))}
+                        disabled={jobPage === 1}
+                        className="hover:bg-white/5"
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setJobPage(p => p + 1)}
+                        disabled={!jobsQuery.data || jobsQuery.data.data.length < 50}
+                        className="hover:bg-white/5"
+                      >
+                        Next
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -311,14 +373,11 @@ const AdminPage = () => {
         </div>
       </main>
       
-      {/* Task Queue Feedback Overlay */}
+      {/* Processing Indicator */}
       {(forceScrape.isPending || forceEnrich.isPending) && (
-        <div className="fixed bottom-4 right-4 bg-accent text-accent-foreground px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4">
-          <RefreshCcw className="h-5 w-5 animate-spin" />
-          <div className="flex flex-col">
-            <span className="text-sm font-bold">Background Task Running</span>
-            <span className="text-[10px] opacity-80">Managing concurrency...</span>
-          </div>
+        <div className="fixed bottom-6 right-6 bg-accent/90 backdrop-blur-md text-accent-foreground px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 border border-white/10">
+          <RefreshCcw className="h-4 w-4 animate-spin" />
+          <span className="text-sm font-semibold tracking-wide uppercase">Task Queued</span>
         </div>
       )}
     </div>

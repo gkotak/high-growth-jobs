@@ -43,24 +43,38 @@ export function useAdminStats() {
   });
 }
 
-export function useAdminCompanies(page: number = 1, limit: number = 20) {
+export function useAdminCompanies(
+  page: number = 1, 
+  limit: number = 20, 
+  search?: string,
+  sortBy: string = 'name',
+  sortOrder: string = 'asc'
+) {
   return useQuery({
-    queryKey: ['admin', 'companies', page, limit],
+    queryKey: ['admin', 'companies', page, limit, search, sortBy, sortOrder],
     queryFn: async (): Promise<{ data: AdminCompany[]; total: number }> => {
-      const response = await fetch(`${API_URL}/api/admin/companies?page=${page}&limit=${limit}`);
+      const url = new URL(`${API_URL}/api/admin/companies`);
+      url.searchParams.append('page', page.toString());
+      url.searchParams.append('limit', limit.toString());
+      if (search) url.searchParams.append('search', search);
+      url.searchParams.append('sort_by', sortBy);
+      url.searchParams.append('sort_order', sortOrder);
+      
+      const response = await fetch(url.toString());
       if (!response.ok) throw new Error('Failed to fetch admin companies');
       return response.json();
     },
   });
 }
 
-export function useAdminJobs(page: number = 1, limit: number = 50, status?: string) {
+export function useAdminJobs(page: number = 1, limit: number = 50, search?: string, status?: string) {
   return useQuery({
-    queryKey: ['admin', 'jobs', page, limit, status],
+    queryKey: ['admin', 'jobs', page, limit, search, status],
     queryFn: async (): Promise<{ data: AdminJob[]; total: number }> => {
       const url = new URL(`${API_URL}/api/admin/jobs`);
       url.searchParams.append('page', page.toString());
       url.searchParams.append('limit', limit.toString());
+      if (search) url.searchParams.append('search', search);
       if (status) url.searchParams.append('status', status);
       
       const response = await fetch(url.toString());
