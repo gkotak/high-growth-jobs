@@ -62,7 +62,8 @@ const AdminPage = () => {
   // SSE Logs
   const [logs, setLogs] = useState<string[]>([]);
   const [showConsole, setShowConsole] = useState(false);
-  const [logFilter, setLogFilter] = useState('');
+  const [activeTabs, setActiveTabs] = useState<string[]>(['All']);
+  const [activeTab, setActiveTab] = useState<string>('All');
 
   // Input states (uncontrolled for performance, only sync on button click)
   const [companySearchInput, setCompanySearchInput] = useState('');
@@ -102,13 +103,15 @@ const AdminPage = () => {
   }, []);
 
   const handleForceScrape = (id: string, name: string) => {
-    setLogFilter(name);
+    if (!activeTabs.includes(name)) setActiveTabs(prev => [...prev, name]);
+    setActiveTab(name);
     setShowConsole(true);
     forceScrape.mutate(id);
   };
 
-  const handleForceEnrich = (id: string, name: string) => {
-    setLogFilter(name);
+  const handleForceEnrich = (id: string, company_name: string) => {
+    if (!activeTabs.includes(company_name)) setActiveTabs(prev => [...prev, company_name]);
+    setActiveTab(company_name);
     setShowConsole(true);
     forceEnrich.mutate(id);
   };
@@ -448,7 +451,7 @@ const AdminPage = () => {
                               size="sm" 
                               variant="ghost" 
                               className="h-8 hover:bg-white/5 text-xs"
-                              onClick={() => handleForceEnrich(job.id, job.title)}
+                              onClick={() => handleForceEnrich(job.id, job.company_name)}
                               disabled={!job.needs_deep_scrape || forceEnrich.isPending}
                             >
                               <Zap className="h-3.5 w-3.5 mr-2 text-yellow-500" />
@@ -504,21 +507,33 @@ const AdminPage = () => {
             </button>
           </div>
           
-          <div className="p-2 border-b border-white/5 bg-zinc-900/30 shrink-0">
-            <div className="flex items-center bg-black/50 border border-white/10 rounded-md px-2 py-1 focus-within:border-white/20 transition-colors">
-              <Search className="h-3 w-3 text-muted-foreground mr-2" />
-              <input 
-                type="text" 
-                placeholder="Filter logs (e.g., Anthropic, Error)..." 
-                value={logFilter}
-                onChange={(e) => setLogFilter(e.target.value)}
-                className="bg-transparent border-none text-xs w-full focus:outline-none text-zinc-300 placeholder:text-zinc-600"
-              />
-              {logFilter && (
-                <button onClick={() => setLogFilter('')} className="ml-1 text-muted-foreground hover:text-white">
-                  <X className="h-3 w-3" />
+          <div className="p-2 border-b border-white/5 bg-zinc-900/30 shrink-0 overflow-x-auto">
+            <div className="flex gap-2">
+              {activeTabs.map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+                    activeTab === tab 
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                      : 'bg-black/30 text-zinc-400 border border-white/5 hover:bg-white/5'
+                  }`}
+                >
+                  {tab}
+                  {tab !== 'All' && (
+                    <div 
+                      className="p-0.5 hover:bg-white/20 rounded-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveTabs(prev => prev.filter(t => t !== tab));
+                        if (activeTab === tab) setActiveTab('All');
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </div>
+                  )}
                 </button>
-              )}
+              ))}
             </div>
           </div>
 
@@ -527,7 +542,7 @@ const AdminPage = () => {
               {logs.length === 0 ? (
                 <div className="text-zinc-600 italic">Waiting for logs...</div>
               ) : (
-                logs.filter(log => !logFilter || log.toLowerCase().includes(logFilter.toLowerCase())).map((log, i) => (
+                logs.filter(log => activeTab === 'All' || log.toLowerCase().includes(activeTab.toLowerCase())).map((log, i) => (
                   <div key={i} className={`
                     ${log.includes('[ERROR]') || log.includes('❌') ? 'text-red-400 font-medium' : ''}
                     ${log.includes('✅') || log.includes('✨') ? 'text-emerald-400 font-medium' : ''}
@@ -537,8 +552,8 @@ const AdminPage = () => {
                   </div>
                 ))
               )}
-              {logs.length > 0 && logs.filter(log => !logFilter || log.toLowerCase().includes(logFilter.toLowerCase())).length === 0 && (
-                <div className="text-zinc-600 italic">No logs match the filter...</div>
+              {logs.length > 0 && logs.filter(log => activeTab === 'All' || log.toLowerCase().includes(activeTab.toLowerCase())).length === 0 && (
+                <div className="text-zinc-600 italic">No logs match the {activeTab} tab...</div>
               )}
             </div>
           </div>
