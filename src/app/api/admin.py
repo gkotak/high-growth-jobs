@@ -9,9 +9,9 @@ from sqlmodel import Session, select, func
 from sqlalchemy.orm import selectinload
 
 from src.app.core.database import get_session, engine
-from src.data_model.models import Company, Job, JobDetails, VCFirm
+from src.data_model.models import Company, Job, JobDetails, VCFirm, ExecutionLog
 from src.app.services.janitor import JanitorService
-import json
+from sqlalchemy import or_
 from fastapi.responses import StreamingResponse
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,7 @@ async def run_throttling_scrape(company_id: UUID):
             try:
                 # 1. Discovery Phase
                 logger.info(f"🔍 Discovery Phase: Scraping {company.name} career portal...")
-                await service._process_company(session, company)
+                await service._process_company(session, company, source="manual")
                 company.last_scraped_at = func.now()
                 session.add(company)
                 session.commit()
@@ -128,7 +128,7 @@ async def run_throttling_scrape(company_id: UUID):
                 
                 if pending_jobs:
                     logger.info(f"✨ Found {len(pending_jobs)} new jobs for {company.name}. Triggering targeted enrichment...")
-                    await service.enrich_pending_jobs(limit=len(pending_jobs) + 5)
+                    await service.enrich_pending_jobs(limit=len(pending_jobs) + 5, source="manual")
                 
                 logger.info(f"✅ Manual scrape/enrich successfully finished for {company.name}")
             except Exception as e:
@@ -145,49 +145,24 @@ async def force_scrape_company(company_id: UUID, background_tasks: BackgroundTas
         logger.error(f"Error in force_scrape_company: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-async def log_generator():
-    """Generator to read and yield new log lines using tail -F."""
-    import subprocess
-    import os
-    
-    log_file = "logs/scrape.log"
-    # Wait until log file exists or just tail -F
-    if not os.path.exists("logs"):
-        os.makedirs("logs", exist_ok=True)
-    if not os.path.exists(log_file):
-        open(log_file, 'a').close()
-        
-    process = await asyncio.create_subprocess_exec(
-        "tail", "-F", "-n", "1000", log_file,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    
+@router.get("/companies/{company_id}/logs")
+async def get_company_logs(company_id: UUID, limit: int = 100, session: Session = Depends(get_session)):
+    """Fetch structured execution history for a company and its jobs."""
     try:
-        while True:
-            line = await process.stdout.readline()
-            if not line:
-                await asyncio.sleep(0.5)
-                continue
-            decoded_line = line.decode('utf-8').strip()
-            if decoded_line:
-                yield f"data: {json.dumps({'message': decoded_line})}\n\n"
-    except asyncio.CancelledError:
-        process.terminate()
-        raise
+        stmt = select(ExecutionLog).where(
+            or_(
+                ExecutionLog.company_id == company_id,
+                ExecutionLog.job_id.in_(
+                    select(Job.id).where(Job.company_id == company_id)
+                )
+            )
+        ).order_by(ExecutionLog.created_at.desc()).limit(limit)
+        logs = session.exec(stmt).all()
+        return logs
+    except Exception as e:
+        logger.error(f"Error fetching logs for {company_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/logs/stream")
-async def stream_logs():
-    """SSE Endpoint for streaming server logs in real-time."""
-    return StreamingResponse(
-        log_generator(), 
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"
-        }
-    )
 
 @router.get("/jobs")
 async def get_admin_jobs(
@@ -226,6 +201,7 @@ async def get_admin_jobs(
         results.append({
             "id": j.id,
             "title": j.title,
+            "company_id": j.company_id,
             "company_name": j.company.name,
             "status": j.status,
             "needs_deep_scrape": j.needs_deep_scrape,
@@ -263,7 +239,7 @@ async def force_enrich_job(job_id: UUID, background_tasks: BackgroundTasks, sess
                     job.needs_deep_scrape = True
                     session.add(job)
                     session.commit()
-                    await service.enrich_pending_jobs(limit=1) # Process just this one
+                    await service.enrich_pending_jobs(limit=1, source="manual") # Process just this one
                     logger.info(f"✅ Successfully enriched job: {job.title}")
                 except Exception as e:
                     logger.error(f"❌ Enrichment failed for job {job.title}: {str(e)}")

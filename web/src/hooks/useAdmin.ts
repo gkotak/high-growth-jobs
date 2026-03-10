@@ -23,6 +23,7 @@ export interface AdminCompany {
 export interface AdminJob {
   id: string;
   title: string;
+  company_id: string;
   company_name: string;
   status: string;
   needs_deep_scrape: boolean;
@@ -130,5 +131,31 @@ export function useForceEnrich() {
     onError: (error) => {
       toast.error(`Error: ${error.message}`);
     },
+  });
+}
+
+export interface ExecutionLog {
+  id: string;
+  company_id?: string;
+  job_id?: string;
+  source: string;
+  action: string;
+  status: string;
+  payload: any;
+  created_at: string;
+}
+
+export function useCompanyLogs(companyId: string) {
+  return useQuery({
+    queryKey: ['admin', 'logs', companyId],
+    queryFn: async (): Promise<ExecutionLog[]> => {
+      if (!companyId) return [];
+      const response = await fetch(`${API_URL}/api/admin/companies/${companyId}/logs`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch logs');
+      }
+      return response.json();
+    },
+    enabled: !!companyId, // Only fetch when we have an ID
   });
 }

@@ -5,6 +5,7 @@ import {
   useAdminJobs, 
   useForceScrape, 
   useForceEnrich,
+  useCompanyLogs,
   AdminCompany,
   AdminJob
 } from '@/hooks/useAdmin';
@@ -58,12 +59,13 @@ const renderTableBody = (query: any, colSpan: number, renderRow: (item: any) => 
 const AdminPage = () => {
   const [companyPage, setCompanyPage] = useState(1);
   const [jobPage, setJobPage] = useState(1);
-  
-  // SSE Logs
-  const [logs, setLogs] = useState<string[]>([]);
+  // DB Logs
   const [showConsole, setShowConsole] = useState(false);
-  const [activeTabs, setActiveTabs] = useState<string[]>(['All']);
-  const [activeTab, setActiveTab] = useState<string>('All');
+  const [activeTabs, setActiveTabs] = useState<Array<{name: string, id: string}>>([{ name: 'All', id: '' }]);
+  const [activeTabName, setActiveTabName] = useState<string>('All');
+  
+  const activeTabId = activeTabs.find(t => t.name === activeTabName)?.id || '';
+  const logsQuery = useCompanyLogs(activeTabId);
 
   // Input states (uncontrolled for performance, only sync on button click)
   const [companySearchInput, setCompanySearchInput] = useState('');
@@ -83,35 +85,16 @@ const AdminPage = () => {
   const forceScrape = useForceScrape();
   const forceEnrich = useForceEnrich();
 
-  // Connect to SSE Log Stream
-  React.useEffect(() => {
-    const API_URL = import.meta.env.VITE_API_URL || '';
-    const source = new EventSource(`${API_URL}/api/admin/logs/stream`);
-    
-    source.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.message) {
-          setLogs((prev) => [...prev, data.message].slice(-2000)); // Keep last 2000 lines
-        }
-      } catch (e) {
-        console.error("Error parsing log line:", e);
-      }
-    };
-
-    return () => source.close();
-  }, []);
-
   const handleForceScrape = (id: string, name: string) => {
-    if (!activeTabs.includes(name)) setActiveTabs(prev => [...prev, name]);
-    setActiveTab(name);
+    if (!activeTabs.some(t => t.name === name)) setActiveTabs(prev => [...prev, { name, id }]);
+    setActiveTabName(name);
     setShowConsole(true);
     forceScrape.mutate(id);
   };
 
-  const handleForceEnrich = (id: string, company_name: string) => {
-    if (!activeTabs.includes(company_name)) setActiveTabs(prev => [...prev, company_name]);
-    setActiveTab(company_name);
+  const handleForceEnrich = (id: string, company_id: string, company_name: string) => {
+    if (!activeTabs.some(t => t.name === company_name)) setActiveTabs(prev => [...prev, { name: company_name, id: company_id }]);
+    setActiveTabName(company_name);
     setShowConsole(true);
     forceEnrich.mutate(id);
   };
@@ -451,7 +434,7 @@ const AdminPage = () => {
                               size="sm" 
                               variant="ghost" 
                               className="h-8 hover:bg-white/5 text-xs"
-                              onClick={() => handleForceEnrich(job.id, job.company_name)}
+                              onClick={() => handleForceEnrich(job.id, job.company_id, job.company_name)}
                               disabled={!job.needs_deep_scrape || forceEnrich.isPending}
                             >
                               <Zap className="h-3.5 w-3.5 mr-2 text-yellow-500" />
@@ -507,53 +490,85 @@ const AdminPage = () => {
             </button>
           </div>
           
-          <div className="p-2 border-b border-white/5 bg-zinc-900/30 shrink-0">
-            <div className="flex flex-wrap gap-2">
-              {activeTabs.map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
-                    activeTab === tab 
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                      : 'bg-black/30 text-zinc-400 border border-white/5 hover:bg-white/5'
-                  }`}
-                >
-                  {tab}
-                  {tab !== 'All' && (
-                    <div 
-                      className="p-0.5 hover:bg-white/20 rounded-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveTabs(prev => prev.filter(t => t !== tab));
-                        if (activeTab === tab) setActiveTab('All');
-                      }}
-                    >
-                      <X className="h-3 w-3" />
-                    </div>
-                  )}
-                </button>
-              ))}
+          <div className="p-2 border-b border-white/5 bg-zinc-900/30 flex flex-col gap-2 shrink-0">
+            <div className="flex flex-wrap gap-2 items-center justify-between">
+              <div className="flex flex-wrap gap-2">
+                {activeTabs.map(tab => (
+                  <button
+                    key={tab.name}
+                    onClick={() => setActiveTabName(tab.name)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+                      activeTabName === tab.name 
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                        : 'bg-black/30 text-zinc-400 border border-white/5 hover:bg-white/5'
+                    }`}
+                  >
+                    {tab.name}
+                    {tab.name !== 'All' && (
+                      <div 
+                        className="p-0.5 hover:bg-white/20 rounded-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveTabs(prev => prev.filter(t => t.name !== tab.name));
+                          if (activeTabName === tab.name) setActiveTabName('All');
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 px-2 text-zinc-400 hover:text-white"
+                onClick={() => logsQuery.refetch()}
+                disabled={logsQuery.isFetching}
+              >
+                <RefreshCcw className={`h-3 w-3 mr-1 ${logsQuery.isFetching ? 'animate-spin' : ''}`} />
+                Ref
+              </Button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed scroll-smooth flex flex-col justify-end min-h-0 bg-black/40">
-            <div className="flex flex-col gap-1.5 mt-auto">
-              {logs.length === 0 ? (
-                <div className="text-zinc-600 italic">Waiting for logs...</div>
+          <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed scroll-smooth flex flex-col justify-start min-h-0 bg-black/40">
+            <div className="flex flex-col gap-1.5 mt-0">
+              {!activeTabId ? (
+                <div className="text-zinc-600 italic">Select a specific company to view execution logs.</div>
+              ) : logsQuery.isLoading ? (
+                <div className="text-zinc-600 italic">Loading logs...</div>
+              ) : logsQuery.isError ? (
+                <div className="text-red-400">Failed to load logs.</div>
+              ) : !logsQuery.data || logsQuery.data.length === 0 ? (
+                <div className="text-zinc-600 italic">No execution history found for this company in the past 30 days.</div>
               ) : (
-                logs.filter(log => activeTab === 'All' || log.toLowerCase().includes(activeTab.toLowerCase())).map((log, i) => (
-                  <div key={i} className={`
-                    ${log.includes('[ERROR]') || log.includes('❌') ? 'text-red-400 font-medium' : ''}
-                    ${log.includes('✅') || log.includes('✨') ? 'text-emerald-400 font-medium' : ''}
-                    ${log.includes('🔍') || log.includes('🧠') || log.includes('[INFO]') ? 'text-zinc-300' : 'text-zinc-500'}
-                   break-words whitespace-pre-wrap`}>
-                    {log}
+                logsQuery.data.map((log) => (
+                  <div key={log.id} className="mb-2 border-l-2 pl-2 flex flex-col gap-1
+                    border-zinc-700
+                  ">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className={`px-1 rounded font-bold ${log.source === 'manual' ? 'text-blue-400' : 'text-purple-400'} bg-white/5`}>
+                          [{log.source.toUpperCase()}]
+                        </span>
+                        <span className="text-zinc-300 font-semibold uppercase tracking-wider">{log.action}</span>
+                        <Badge variant="outline" className={`h-4 text-[10px] uppercase font-bold px-1 py-0
+                          ${log.status === 'success' ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 
+                            log.status === 'failed' ? 'text-red-400 border-red-500/30 bg-red-500/10' : 
+                            'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'}`}>
+                          {log.status}
+                        </Badge>
+                      </div>
+                      <span className="text-zinc-500 text-[10px]">{new Date(log.created_at).toLocaleString()}</span>
+                    </div>
+                    {Object.keys(log.payload).length > 0 && (
+                      <div className="text-zinc-400 text-[10px] mt-1 bg-black/30 border border-white/5 p-2 rounded whitespace-pre-wrap font-mono relative">
+                        {JSON.stringify(log.payload, null, 2)}
+                      </div>
+                    )}
                   </div>
                 ))
-              )}
-              {logs.length > 0 && logs.filter(log => activeTab === 'All' || log.toLowerCase().includes(activeTab.toLowerCase())).length === 0 && (
-                <div className="text-zinc-600 italic">No logs match the {activeTab} tab...</div>
               )}
             </div>
           </div>

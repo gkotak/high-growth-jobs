@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import Optional, List
 from uuid import UUID, uuid4
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import JSONB
 
 class TenantBase(SQLModel):
     name: str
@@ -127,3 +129,21 @@ class JobDetails(JobDetailsBase, table=True):
     
     job: Job = Relationship(back_populates="details")
 
+class ExecutionLog(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    company_id: Optional[UUID] = Field(default=None, foreign_key="company.id", index=True)
+    job_id: Optional[UUID] = Field(default=None, foreign_key="job.id", index=True)
+    
+    # "daemon" or "manual"
+    source: str = Field(...) 
+    
+    # e.g., "discovery", "enrichment"
+    action: str = Field(...) 
+    
+    # "success", "failed", "warning"
+    status: str = Field(...) 
+    
+    # Granular JSON payload. e.g. {"new_jobs_found": 5} or {"error": "Cloudflare wall"}
+    payload: dict = Field(default_factory=dict, sa_column=Column(JSONB))
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)

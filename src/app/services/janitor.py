@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import List, Set
 from sqlmodel import Session, select
 from src.app.core.orchestrator import MarketScraperOrchestrator
-from src.data_model.models import Company, Job
+from src.data_model.models import Company, Job, ExecutionLog
 from src.app.core.database import engine
 
 logger = logging.getLogger(__name__)
@@ -50,9 +50,22 @@ class JanitorService:
                     session.commit()
                 except Exception as e:
                     logger.error(f"Janitor failed for {company.name}: {e}")
-                    session.rollback()
+                    # Log the failure for Admin UI visibility
+                    try:
+                        log_entry = ExecutionLog(
+                            company_id=company.id,
+                            source="daemon",
+                            action="discovery",
+                            status="failed",
+                            payload={"error": str(e)}
+                        )
+                        session.add(log_entry)
+                        session.commit()
+                    except Exception as log_err:
+                        logger.error(f"Failed to log discovery error: {log_err}")
+                        session.rollback()
 
-    async def _process_company(self, session: Session, company: Company):
+    async def _process_company(self, session: Session, company: Company, source: str = "daemon"):
         logger.info(f"Cleaning/Syncing {company.name}...")
         
         # A. Trigger Scraper (Pass hash for Smart Skip)
@@ -96,10 +109,20 @@ class JanitorService:
                 session.add(db_job)
                 stale_count += 1
 
+        # Logging Discovery Phase End
+        log_entry = ExecutionLog(
+            company_id=company.id,
+            source=source,
+            action="discovery",
+            status="success",
+            payload={"new_jobs_found": new_count, "stale_jobs_closed": stale_count}
+        )
+        session.add(log_entry)
+
         session.flush() # Let the outer loop commit to maintain atomicity
         logger.info(f"Done with {company.name}. New: {new_count}, Closed: {stale_count}")
 
-    async def enrich_pending_jobs(self, limit: int = 50):
+    async def enrich_pending_jobs(self, limit: int = 50, source: str = "daemon"):
         """
         Phase 2: Deep scrapes a batch of jobs reading their raw HTML descriptions
         and extracting AI structured details to attach to JobDetails.
@@ -162,11 +185,33 @@ class JanitorService:
 
                     job.needs_deep_scrape = False
                     
+                    log_entry = ExecutionLog(
+                        company_id=job.company_id,
+                        job_id=job.id,
+                        source=source,
+                        action="enrichment",
+                        status="success",
+                        payload={"action": "normalized title and extracted details"}
+                    )
+                    
                     session.add(job_details)
                     session.add(job)
+                    session.add(log_entry)
                     session.commit()
                     logger.info(f"✅ Successfully enriched: {job.title}")
                     
                 except Exception as e:
                     logger.error(f"❌ Failed to enrich job {job.id}: {e}")
+                    log_entry = ExecutionLog(
+                        company_id=job.company_id,
+                        job_id=job.id,
+                        source=source,
+                        action="enrichment",
+                        status="failed",
+                        payload={"error": str(e)}
+                    )
                     session.rollback()
+                    # Re-open session to commit the failure log
+                    with Session(engine) as err_session:
+                        err_session.add(log_entry)
+                        err_session.commit()
