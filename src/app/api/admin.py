@@ -179,7 +179,15 @@ async def log_generator():
 @router.get("/logs/stream")
 async def stream_logs():
     """SSE Endpoint for streaming server logs in real-time."""
-    return StreamingResponse(log_generator(), media_type="text/event-stream")
+    return StreamingResponse(
+        log_generator(), 
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 @router.get("/jobs")
 async def get_admin_jobs(
